@@ -17,7 +17,7 @@ divide_output_dir = "../../youtube_audio/transcripts/divide"
 embed_index = "../../youtube_audio/index"
 
 # 要約したいYouTubeのURL（v=以降をコピペしてね）
-youtube_url = "QmgmEyPJhp8"
+youtube_url = "5MK_4zuoZyE"
 
 def download_youtube():
     with YoutubeDL({'overwrites':True, 'format':'bestaudio[ext=m4a]', 'outtmpl':input_file}) as ydl:
@@ -58,8 +58,9 @@ def divide_transcript():
         os.makedirs(divide_output_dir)
     existing_files = os.listdir(divide_output_dir)
     for filename in existing_files:
-        filepath = os.path.join(divide_output_dir, filename)
-        os.remove(filepath)
+        if filename != '.gitkeep':
+            filepath = os.path.join(divide_output_dir, filename)
+            os.remove(filepath)
 
     # Read transcript from file
     with open("../../youtube_audio/transcripts/audio.txt", "r") as f:

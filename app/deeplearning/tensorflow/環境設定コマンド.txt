@@ -21,9 +21,6 @@ python tf_version.py
 cd work
 time python mnist_cnn_M1.py
 
-# ムジュンスメールを学習データに落とす方法
-デスクトップの「ムジュンスメール2text」（AppleScript）をダブルクリックで実行する
-
 # 学習する方法
 ### この環境変数はPythonが遅くなるっぽいので起動するターミナル限定にしておく
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python

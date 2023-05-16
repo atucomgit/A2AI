@@ -95,9 +95,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.create_index:
+        # 特定のディレクトリ配下のソースファイルを覚え込ませるサンプル
         create_new_index("../../utils", "./storage")
         chat("./storage", None)
     elif args.recursive_create_index:
+        # 特定のディレクトリ配下のソースファイル（さらにその下以降のディレクトリも再起的に全て）を覚え込ませるサンプル
         recursive_create_new_index("../../utils", "./storage")
         chat("./storage", None)
     else:

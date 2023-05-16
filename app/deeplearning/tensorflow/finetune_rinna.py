@@ -54,6 +54,7 @@ def send_prompt_and_run(prompt):
     print(f"処理時間: {elapsed_time:.3f}秒")
 
 def create_train_data():
+    """ダミーのトレーニングデータを作成"""
     file_path = "./data_sets/qa_data.txt"
 
     with open(file_path, "w") as file:
