@@ -1,0 +1,47 @@
+conda create -n tf python=3.9
+conda activate tf
+
+(以下、tf仮想環境内)
+git clone https://github.com/tak6uch1/cuda-tensorflow.git
+cd cuda-tensorflow/work
+
+conda install -c apple tensorflow-deps
+pip install tensorflow-macos
+pip install tensorflow-metal
+conda install notebook
+pip install numpy --upgrade
+pip install pandas --upgrade
+pip install matplotlib --upgrade
+pip install scikit-learn --upgrade
+pip install scipy --upgrade
+pip install plotly --upgrade
+
+python tf_version.py 
+
+cd work
+time python mnist_cnn_M1.py
+
+# ムジュンスメールを学習データに落とす方法
+デスクトップの「ムジュンスメール2text」（AppleScript）をダブルクリックで実行する
+
+# 学習する方法
+### この環境変数はPythonが遅くなるっぽいので起動するターミナル限定にしておく
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+### 学習実施
+python ../../../transformers/examples/tensorflow/language-modeling/run_clm.py \
+    --model_name_or_path=rinna/japanese-gpt2-medium \
+    --train_file=data_sets/mujunss_mail.txt \
+    --validation_file=data_sets/mujunss_mail.txt \
+    --do_train \
+    --do_eval \
+    --num_train_epochs=3 \
+    --save_steps=5000 \
+    --save_total_limit=3 \
+    --per_device_train_batch_size=1 \
+    --per_device_eval_batch_size=1 \
+    --output_dir=finetuned_model/
+
+# 学習した所感
+文脈はいい感じ。後続文の生成は、だいぶ賢い。
+ただ、FAQは苦手だと思われる。文章生成とFAQは別アーキテクチャが必要か？

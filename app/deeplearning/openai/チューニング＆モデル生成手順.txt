@@ -1,0 +1,40 @@
+# データの準備：train.txtを作る
+{"prompt": "こう言ったら", "completion": "こう答える"}
+
+# 以下のコマンドを実行すると、train.jsonと同じディレクトリにtrain_prepared.jsonlが自動生成される
+openai tools fine_tunes.prepare_data -f ./data_sets/train.json
+
+# モデルの生成
+# [2023-05-12 09:32:11] Created fine-tune: ft-KYAzAWd3cvQd9Fww8HLgPRQy
+# [2023-05-12 09:32:53] Fine-tune costs $19.39　（←注意！！）
+# https://openai.com/pricing
+#  davinciは高い。300KBのトレーニングデータで$19。
+#  個人で色々試すなら、エイダあたりが良いかも。（davinciの1/10の価格）
+openai api fine_tunes.create -t ./data_sets/train_prepared.jsonl -m ada
+
+## モデル生成したログ
+(base) atsuyahyogo@A2-MacBook-Pro-16-M2-MAX openai % openai api fine_tunes.create -t ./data_sets/train_prepared.jsonl -m davinci
+Upload progress: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 334k/334k [00:00<00:00, 393Mit/s]
+Uploaded file from ./data_sets/train_prepared.jsonl: file-mDO4LO4OZGybr1DpdZUl6Wd0
+Created fine-tune: ft-KYAzAWd3cvQd9Fww8HLgPRQy
+Streaming events until fine-tuning is complete...
+
+(Ctrl-C will interrupt the stream, but not cancel the fine-tune)
+[2023-05-12 09:32:11] Created fine-tune: ft-KYAzAWd3cvQd9Fww8HLgPRQy
+[2023-05-12 09:32:53] Fine-tune costs $19.39
+[2023-05-12 09:32:53] Fine-tune enqueued. Queue number: 0
+[2023-05-12 09:33:06] Fine-tune started
+
+## ファインチューニングしたモデル名はlistコマンドで知ることができる。
+(base) atsuyahyogo@A2-MacBook-Pro-16-M2-MAX openai % openai api fine_tunes.list
+{
+  "data": [
+    {
+      "created_at": 1683851531,
+      "fine_tuned_model": "davinci:ft-personal-2023-05-12-00-49-15",　←これがモデル名
+      "hyperparams": {
+        "batch_size": 1,
+        "learning_rate_multiplier": 0.1,
+        "n_epochs": 4,
+        "prompt_loss_weight": 0.01
+      },

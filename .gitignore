@@ -1,0 +1,12 @@
+*.wav
+*.pyc
+*.h5
+*.m4a
+.DS_Store
+app/deeplearning/*/data_sets/*.txt
+app/deeplearning/*/data_sets/*.json
+app/deeplearning/*/data_sets/*.jsonl
+app/deeplearning/tensorflow/finetuned_model/*
+youtube_audio/index/*.json
+youtube_audio/transcripts/*.txt
+youtube_audio/transcripts/divide/*.txt
