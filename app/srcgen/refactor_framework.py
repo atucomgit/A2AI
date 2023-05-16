@@ -49,7 +49,7 @@ Abstract:
   It covers all directories under the specified root directory and targets all source code.
 Fact:
   Language Script for source code Generation
-  4. Refactoring Specifications
+  1. Refactoring Specifications
     1. Rename class names, variable names, and method names to be more understandable, write in English
     2. For comments
       1. Add missing ones
