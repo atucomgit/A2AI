@@ -6,6 +6,7 @@
 app/deeplearning/*/data_sets/*.txt
 app/deeplearning/*/data_sets/*.json
 app/deeplearning/*/data_sets/*.jsonl
+app/deeplearning/*/storage/*.json
 app/deeplearning/tensorflow/finetuned_model/*
 youtube_audio/index/*.json
 youtube_audio/transcripts/*.txt
