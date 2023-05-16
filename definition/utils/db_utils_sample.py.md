@@ -1,7 +1,7 @@
 - [ ] Instructions
   - [ ] Generate code that meets the "Abstract" and "Fact" below according to the "Process".
   - [ ] Program language = Python
-  - [ ] Model = gpt-4
+  - [ ] Model = gpt-3.5-turbo
   - [ ] Interactive = False
 - [ ] Policy
   - [ ] Brainstorm to fill all methods as far as you know with mutually exclusive and collectively exhaustive options, step-by-step.
