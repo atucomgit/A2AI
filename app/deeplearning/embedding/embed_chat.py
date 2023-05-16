@@ -89,6 +89,7 @@ def chat(save_dir, prompt):
     print(f'回答：{query_engine.query(prompt)}')
 
 if __name__ == "__main__":
+    """引数を何も指定しない場合、エンベッドしたデータに対するChatを起動できます"""
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--create_index", action="store_true", help="インデックスの作成")
     parser.add_argument("-rc", "--recursive_create_index", action="store_true", help="インデックスの作成")
