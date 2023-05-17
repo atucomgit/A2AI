@@ -8,6 +8,8 @@ app/deeplearning/*/data_sets/*.json
 app/deeplearning/*/data_sets/*.jsonl
 app/deeplearning/*/storage/*.json
 app/deeplearning/tensorflow/finetuned_model/*
+app/deeplearning/ocr/image/*
+!app/deeplearning/ocr/image/.gitkeep
 youtube_audio/index/*.json
 youtube_audio/transcripts/*.txt
 youtube_audio/transcripts/divide/*.txt
