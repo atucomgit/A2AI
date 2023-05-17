@@ -18,8 +18,10 @@ A2AI
 ### ・spqa_framework.py
 SQPAの概念の元、プログラムを自動生成するフレームワークです。
 #### 起動方法
+```
 cd app/srcgen
 python spqa_framework.py
+```
 
 #### 代表的な引数
 | コマンド | 説明                                                 |
@@ -46,20 +48,24 @@ python spqa_framework.py
 ソースコードを自動でリファクタリングするフレームワークです。
 
 #### 起動方法
+```
 cd app/srcgen
 python refactor_framework.py
+```
 
 #### 注意事項
-一旦、app/utils配下のソースをリファクタするようにしています。
-変更したい場合はrefactor_framework.pyを修正してください。
+- 一旦、app/utils配下のソースをリファクタするようにしています。
+- 変更したい場合はrefactor_framework.pyを修正してください。
 
 ## app/utils
 ### ・youtube_audio
 YouTubeの動画を要約するアプリです。
 
 #### 起動方法
+```
 cd app/utils
 python youtube_audio.py
+```
 
 #### 代表的な引数
 | コマンド   | 説明                                                                  |
@@ -69,12 +75,14 @@ python youtube_audio.py
 | -ec        | エンベッドした内容に対してチャット                                       |
 
 #### 注意事項
-A2AIと同列に、whisper.cppが必要です。
-※もしかしたらmacじゃないと動かないかも。
+- A2AIと同列に、whisper.cppが必要です。
+- ※もしかしたらmacじゃないと動かないかも。
 
 ディレクトリ構成例：
+```
 A2AI
 whisper.cpp
+```
 
 whisper.cppのインストール方法は以下のサイトを参考にしてください。
 https://zenn.dev/shu223/articles/whisper-coreml?fbclid=IwAR20EpbYK1bbP12hiNHiVMUdhAcKzbhbYg473IdQo0cVdmO9TgrQoY_Qw28
@@ -84,8 +92,10 @@ https://zenn.dev/shu223/articles/whisper-coreml?fbclid=IwAR20EpbYK1bbP12hiNHiVMU
 エンベッド技術を用いて、GPTモデルに対して手持ちのデータを学習させた後にチャットするサンプルです。
 
 #### 起動方法
+```
 cd app/deeplearning/embedding
 python embed_chat.py
+```
 
 #### 代表的な引数
 | コマンド   | 説明                                                         |
@@ -102,19 +112,21 @@ python embed_chat.py
 - サンプルでは、-cをすると、app/utils配下のソースコードをエンベッドするようにパス設定しています。エンベッド後に、どんな機能を備えているの？とか、チャットしてみてください。
 
 ### ・openai
-GPT3シリーズをファインチューニングして、独自のModelを作成する方法をコード化したものです。
-お金が異常にかかるので、コードを参照するレベルに留めていただくのが良いです。
-作成したModelはOpenAI社のクラウド上に格納され、呼び出すごとに課金されます。
-データを準備する方法や詳細は、同ディレクトリに格納されている「チューニング＆モデル生成手順.txt」を参照してください。
+- GPT3シリーズをファインチューニングして、独自のModelを作成する方法をコード化したものです。
+- お金が異常にかかるので、コードを参照するレベルに留めていただくのが良いです。
+- 作成したModelはOpenAI社のクラウド上に格納され、呼び出すごとに課金されます。
+- データを準備する方法や詳細は、同ディレクトリに格納されている「チューニング＆モデル生成手順.txt」を参照してください。
 
 ### ・tensorflow
-TransformerベースのLLMをローカルでファインチューニングするサンプルです。
-トレーニング後の使い方としては、与えたプロンプトに続く文章を生成させることができます。
-（チャットではないので注意してください）
+- TransformerベースのLLMをローカルでファインチューニングするサンプルです。
+- トレーニング後の使い方としては、与えたプロンプトに続く文章を生成させることができます。
+- （チャットではないので注意してください）
 
 #### 起動方法
+```
 cd app/deeplearning/tensorflow 
 python finetune_rinna.py -r
+```
 
 #### 代表的な引数
 | コマンド   | 説明                                                         |
@@ -123,6 +135,7 @@ python finetune_rinna.py -r
 | -r         | トレーニングしたModelに対してChat                              |
 
 #### 注意事項
+```
 A2AIと同列に、transformersのプログラム群が必要です。
 
 ディレクトリ構成例：
@@ -134,3 +147,4 @@ git clone https://github.com/tak6uch1/cuda-tensorflow.git
 
 動かす場合は、同ディレクトリに格納してある「環境設定コマンド.txt」内記載のインストールを実施してください。
 おそらく、mac（且つ、M1/M2チップ搭載機）じゃないと動かないかも？
+```
