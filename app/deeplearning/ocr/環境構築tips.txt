@@ -1,0 +1,5 @@
+# Model
+https://huggingface.co/microsoft/trocr-large-printed
+
+# 他のModelとかファインチューニングを試していきたい
+（参考）https://qiita.com/relu/items/c027c486758525c0b6b9
