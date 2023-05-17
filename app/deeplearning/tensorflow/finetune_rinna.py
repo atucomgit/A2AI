@@ -68,7 +68,7 @@ if __name__ == "__main__":
     # 引数のパーサを作成
     parser = argparse.ArgumentParser(description='Train or run a fine-tuned GPT-2 model.')
     parser.add_argument('-t', '--train', action='store_true', help='Fine-tune the model.')
-    parser.add_argument('-r', '--run', metavar='PROMPT', type=str, help='Generate a response to a prompt.')
+    parser.add_argument('-r', '--run', action='store_true', help='Generate a response to a prompt.')
     parser.add_argument('-c', '--create_data', action='store_true', help='Generate training data.')
     args = parser.parse_args()
 
@@ -79,6 +79,10 @@ if __name__ == "__main__":
             finetune_and_save_model('./data_sets/mujunss_mail.txt')
             # finetune_and_save_model('./data_sets/qa_data.txt')            
         elif args.run:
-            send_prompt_and_run(args.run)
+            prompt = input("文章生成を行う冒頭の文を与えてください：")
+            if prompt:
+                send_prompt_and_run(prompt)
+            else:
+                print("冒頭の文が未指定だったので、処理をキャンセルしました。")
         else:
             print("Specify either -t for training or -r PROMPT for running.")
