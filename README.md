@@ -12,6 +12,12 @@ A2AI
   /youtube_audio : youtube_audio.pyが利用する動画格納ディレクトリ
 ```
 
+# 全体的な注意事項
+OpenAI社のAPI KEYを多用しているので、APIキーを発行し、システムの環境変数に設定してください。
+```
+export OPENAI_API_KEY=自分のキー
+```
+
 # アプリ別の解説
 
 ## app/srcgen
@@ -43,6 +49,8 @@ python spqa_framework.py
 - トークン数の制約から、以下の挙動があります。参考にしてください
   - gpt-3.5-turboは長いプログラムを作るのに適している。ただし、難しいのは苦手。
   - gpt-4は高度なプログラムを作るのに適している。ただし、長いのは苦手。
+- 直近ではトークン数が制約になるので、ソースコメントは書かせないほうが良い
+- 定義が多くなると無視される定義が出てくるので、簡潔に書いたほうが良い
 
 ### ・refactor_framework.py
 ソースコードを自動でリファクタリングするフレームワークです。
@@ -147,4 +155,7 @@ git clone https://github.com/tak6uch1/cuda-tensorflow.git
 
 動かす場合は、同ディレクトリに格納してある「環境設定コマンド.txt」内記載のインストールを実施してください。
 おそらく、mac（且つ、M1/M2チップ搭載機）じゃないと動かないかも？
+
+「環境設定コマンド.txt」にも記載していますが、以下の環境変数設定も必要です。
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 ```
