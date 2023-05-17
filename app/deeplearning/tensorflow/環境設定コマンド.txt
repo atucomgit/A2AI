@@ -1,7 +1,8 @@
+(以下の仮想環境名tfは任意に変更可能です)
 conda create -n tf python=3.9
 conda activate tf
 
-(以下、tf仮想環境内)
+(以下、tf仮想環境内でコマンドを実行。y/nが求められたらyで。)
 git clone https://github.com/tak6uch1/cuda-tensorflow.git
 cd cuda-tensorflow/work
 

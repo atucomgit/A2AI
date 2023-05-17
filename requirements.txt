@@ -1,3 +1,6 @@
 openai
 yt_dlp
 llama_index==0.6.6
+transformers
+datasets
+sentencepiece
