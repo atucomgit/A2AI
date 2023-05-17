@@ -1,9 +1,8 @@
 # 環境構築方法
-git clone [URL]
 pip install -r requirements.txt
 
-
 # ディレクトリ構成
+```
 A2AI
   /app
     /deeplearning : ディープラーニング系のプログラムを格納
@@ -11,7 +10,7 @@ A2AI
     /utils : いろんなツール群
   /definition : spqa_framework.pyが参照するプログラム自動生成定義ファイルを配置
   /youtube_audio : youtube_audio.pyが利用する動画格納ディレクトリ
-
+```
 
 # アプリ別の解説
 
