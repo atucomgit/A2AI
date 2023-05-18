@@ -11,6 +11,7 @@ from PIL import Image
 
 # load model
 model_path = "./japanese_ocr_model/"
+# model_path = "./japanese_ocr_model_finetuned/" # finetune_japanese_ocr_reader.pyでファインチューニングした自分のモデルを試す場合
 processor = ViTImageProcessor.from_pretrained(model_path)
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = VisionEncoderDecoderModel.from_pretrained(model_path)
@@ -36,6 +37,7 @@ def post_process(text):
 if __name__ == "__main__":
     # 画像ファイルのパス
     image_path = "./image/screen_shot_jp.png"
+    # image_path = "./image/train.png" # finetune_japanese_ocr_reader.pyでファインチューニングした自分のモデルを試す場合
 
     # 画像を開く
     image = Image.open(image_path)

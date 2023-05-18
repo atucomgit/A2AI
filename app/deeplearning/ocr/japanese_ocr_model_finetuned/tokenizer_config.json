@@ -1,0 +1,22 @@
+{
+  "clean_up_tokenization_spaces": true,
+  "cls_token": "[CLS]",
+  "do_lower_case": false,
+  "do_subword_tokenize": true,
+  "do_word_tokenize": true,
+  "jumanpp_kwargs": null,
+  "mask_token": "[MASK]",
+  "mecab_kwargs": {
+    "mecab_dic": "unidic_lite"
+  },
+  "model_max_length": 1000000000000000019884624838656,
+  "never_split": null,
+  "pad_token": "[PAD]",
+  "sep_token": "[SEP]",
+  "subword_tokenizer_type": "character",
+  "sudachi_kwargs": null,
+  "tokenizer_class": "BertJapaneseTokenizer",
+  "tokenizer_file": null,
+  "unk_token": "[UNK]",
+  "word_tokenizer_type": "mecab"
+}

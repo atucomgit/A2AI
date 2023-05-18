@@ -167,6 +167,10 @@ python ocr_reader.py
 # 日本語読み取り機能対応版を試す場合
 cd app/deeplearning/ocr
 python japanese_ocr_reader.py
+
+# 日本語読み取り機能対応版で利用しているModel(pytorch_model.bin)をファインチューニングするサンプル
+cd app/deeplearning/ocr
+python finetune_japanese_ocr_reader.py
 ```
 
 ### 特記事項
@@ -175,6 +179,7 @@ python japanese_ocr_reader.py
 - japanese_ocr_reader.pyを利用する場合は、pytorch_model.binを入手し、japanese_ocr_modeディレクトリに格納してください。
   - https://huggingface.co/spaces/Detomo/Japanese_OCR/tree/main/model
 - japanese_ocr_readerで確認しましたが、対応する画像のサイズは150*150ピクセルまででした。
+- ファインチューニングのサンプル（finetune_japanese_ocr_reader.py）では、train.pngを"HOGE"と読ませる訓練をしています。
 
 ## openai
 - GPT3シリーズをファインチューニングして、独自のModelを作成する方法をコード化したものです。
