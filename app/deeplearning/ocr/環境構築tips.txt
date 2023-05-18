@@ -16,3 +16,6 @@ pytorch_model.binが必要。
 以下からダウンロードして配置してください。
 https://huggingface.co/spaces/Detomo/Japanese_OCR/tree/main/model
 
+## ファインチューニング
+finetune_japanese_ocr_reader.pyを実行するとファインチューニングされたモデルを得ることができます。
+preprocessor_config.jsonだけ、自動生成されないため、元の定義をコピーして手動で修正してください。
