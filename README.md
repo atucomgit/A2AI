@@ -178,7 +178,7 @@ python finetune_japanese_ocr_reader.py
 - ocr_reader.pyは追加学習したいところ。ワーニングを消したい。
 - japanese_ocr_reader.pyを利用する場合は、pytorch_model.binを入手し、japanese_ocr_modeディレクトリに格納してください。
   - https://huggingface.co/spaces/Detomo/Japanese_OCR/tree/main/model
-- japanese_ocr_readerで確認しましたが、対応する画像のサイズは150*150ピクセルまででした。
+- japanese_ocr_readerで確認しましたが、対応する画像のサイズは150*150ピクセルまででした。（Model的には224*224まで対応するが、150を超えると著しく変な読み取りになる）
 - ファインチューニングのサンプル（finetune_japanese_ocr_reader.py）では、train.pngを"HOGE"と読ませる訓練をしています。
 
 ## openai
