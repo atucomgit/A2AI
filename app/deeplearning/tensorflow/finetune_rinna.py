@@ -2,7 +2,25 @@ import os
 import argparse
 from transformers import T5Tokenizer, AutoModelForCausalLM
 
-EPOCHS = 3
+EPOCHS = 1
+
+MODELS = {
+    # 東北大
+    "tohoku": {
+        "base_model": "cl-tohoku/bert-large-japanese-char",
+        "output_dir": "finetuned/cl-tohoku/"
+    },
+    # Microsoft:rinna
+    "rinna": {
+        "base_model": "rinna/japanese-gpt2-medium",
+        "output_dir": "finetuned/rinna-gpt2/"
+    }
+}
+
+model_type = "rinna"
+
+base_model = MODELS[model_type]["base_model"]
+output_dir = MODELS[model_type]["output_dir"]
 
 def finetune_and_save_model(path_to_dataset):
     # TODO 以下、ターミナルで実行しないとうまくいかない
@@ -13,7 +31,7 @@ def finetune_and_save_model(path_to_dataset):
     print(f"データ：{path_to_dataset}")
 
     command = 'python ../../../../transformers/examples/tensorflow/language-modeling/run_clm.py ' \
-        '--model_name_or_path=rinna/japanese-gpt2-medium ' \
+        f'--model_name_or_path={base_model} ' \
         f'--train_file={path_to_dataset} ' \
         f'--validation_file={path_to_dataset} ' \
         '--do_train ' \
@@ -23,7 +41,7 @@ def finetune_and_save_model(path_to_dataset):
         '--save_total_limit=3 ' \
         '--per_device_train_batch_size=1 ' \
         '--per_device_eval_batch_size=1 ' \
-        '--output_dir=finetuned_model/'
+        f'--output_dir={output_dir}'
 
     os.system(command)
 
@@ -34,16 +52,17 @@ def send_prompt_and_run(prompt):
     """
 
     # トークナイザーとモデルの準備
-    tokenizer = T5Tokenizer.from_pretrained("rinna/japanese-gpt2-medium")
-    model = AutoModelForCausalLM.from_pretrained("finetuned_model/", from_tf=True)
+    tokenizer = T5Tokenizer.from_pretrained(base_model)
+    fine_tuned_model = AutoModelForCausalLM.from_pretrained(output_dir, from_tf=True)
 
     # 推論の実行
     import time
     start_time = time.time()
     print("----推論開始-------------------------------")
+    print(f"Model: {model_type}")
 
     input = tokenizer.encode(prompt, return_tensors="pt")
-    output = model.generate(input, do_sample=True, max_length=200, num_return_sequences=3)
+    output = fine_tuned_model.generate(input, do_sample=True, max_length=200, num_return_sequences=3)
     decoded_output = tokenizer.batch_decode(output, skip_special_tokens=True)
     result_text = '\n'.join(decoded_output)
     print(result_text)
