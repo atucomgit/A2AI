@@ -5,6 +5,12 @@ transformers
 datasets
 sentencepiece
 torch
+
+# 以下は事前にportaudioが必要
+# brew install portaudio
+pyaudio
+SpeechRecognition
+
 # 以下は事前にMeCabが必要
 # brew install mecab
 # brew install mecab-ipadic

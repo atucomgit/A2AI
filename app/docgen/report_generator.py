@@ -1,5 +1,8 @@
 
-import os, requests
+import os, requests, sys
+sys.path.append("../utils")
+import speech_input
+
 
 openai_api_key = os.environ.get("OPENAI_API_KEY")
 model = "gpt-4"  # 解禁されていなければ、gpt-3.5-turboで差し替えてください。
@@ -16,7 +19,7 @@ def run_gpt(template, data, prompt):
 
     print("---- ChatGPTにて報告書作成 ----")
     print(f"prompt:{prompt}")
-    print("------------------------------")
+    print("-------------------------------")
     print("処理中...")
     
     data = {
@@ -71,7 +74,10 @@ if __name__ == "__main__":
     data_path = "./data_sets/週次作業状況.txt"
     output_path = "./artifacts/週次報告書.txt"
 
-    prompt = input("作成するドキュメントに対する指示をお願いします：")
+    # prompt = input("作成するドキュメントに対する指示をお願いします：")
+    prompt = speech_input.get_speech_input("作成するドキュメントに対する指示をお願いします：")
+    print(prompt)
+
     if not prompt:
       prompt = "レポートを作成して。"
     make_document(template_path, data_path, prompt, output_path)

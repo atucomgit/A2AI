@@ -8,6 +8,10 @@ from langchain.chat_models import ChatOpenAI
 import argparse
 import os
 
+sys.path.append("../utils")
+import speech_input
+
+
 def create_new_index(target_dir, save_dir):
     """
     adaを利用する場合以下のコストがかかる
@@ -85,7 +89,10 @@ def chat(save_dir, prompt):
 
     # 質問応答
     if not prompt:
-        prompt = input("質問を入力してください：")
+        # prompt = input("質問を入力してください：")
+        # print(prompt)
+        prompt = speech_input.get_speech_input("チャット受付中：")
+    print("---- GPTさん考え中... ---")
     print(f'回答：{query_engine.query(prompt)}')
 
 if __name__ == "__main__":

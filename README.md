@@ -1,10 +1,12 @@
 # 環境構築方法
 ```
+brew install portaudio
 brew install mecab
 brew install mecab-ipadic
 pip install -r requirements.txt
 ```
 
+- portaudioは、音声入力をするために必要です。youtube2textや、embed_chatなどで利用しています。
 - mecabは、japanese_ocr_reader.pyを起動するために必要です。
 - もしjapanese_ocr_reader.pyに興味がない場合は、requirements.txtを修正して必要なものだけpipしてください。
 
