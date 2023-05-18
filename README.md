@@ -174,6 +174,7 @@ python japanese_ocr_reader.py
 - ocr_reader.pyは追加学習したいところ。ワーニングを消したい。
 - japanese_ocr_reader.pyを利用する場合は、pytorch_model.binを入手し、japanese_ocr_modeディレクトリに格納してください。
   - https://huggingface.co/spaces/Detomo/Japanese_OCR/tree/main/model
+- japanese_ocr_readerで確認しましたが、対応する画像のサイズは150*150ピクセルまででした。
 
 ## openai
 - GPT3シリーズをファインチューニングして、独自のModelを作成する方法をコード化したものです。

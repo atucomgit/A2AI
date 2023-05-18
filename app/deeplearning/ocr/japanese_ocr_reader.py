@@ -1,5 +1,7 @@
 # 参考
 # https://huggingface.co/spaces/Detomo/Japanese_OCR
+#
+# 以下のコードでは、150 * 150ピクセルの画像まで処理できることを確認。
 
 import numpy as np
 from transformers import AutoTokenizer, VisionEncoderDecoderModel, ViTImageProcessor
