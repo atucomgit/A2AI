@@ -169,6 +169,8 @@ cd app/deeplearning/ocr
 python japanese_ocr_reader.py
 ```
 
+本日は晴天なり！
+
 ### 特記事項
 - imageディレクトリに解析したい画像ファイルを格納し、ソースコードのimage_pathを修正し、起動してください。
 - ocr_reader.pyは追加学習したいところ。ワーニングを消したい。
