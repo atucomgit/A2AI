@@ -15,8 +15,7 @@ model = VisionEncoderDecoderModel.from_pretrained('microsoft/trocr-large-printed
 pixel_values = processor(images=image, return_tensors="pt").pixel_values
 
 # テキストを生成
-generated_ids = model.generate(pixel_values)
-generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+generated_ids = model.generate(pixel_values, max_new_tokens=100)
+text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
-print("読み取り結果")
-print(generated_text)
+print(f"---- 読み取り結果 ----\n{text}")

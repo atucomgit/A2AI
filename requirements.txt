@@ -5,3 +5,10 @@ transformers
 datasets
 sentencepiece
 torch
+# 以下は事前にMeCabが必要
+# brew install mecab
+# brew install mecab-ipadic
+mecab
+jaconv
+fugashi
+unidic_lite

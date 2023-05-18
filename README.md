@@ -1,5 +1,12 @@
 # 環境構築方法
+```
+brew install mecab
+brew install mecab-ipadic
 pip install -r requirements.txt
+```
+
+- mecabは、japanese_ocr_reader.pyを起動するために必要です。
+- もしjapanese_ocr_reader.pyに興味がない場合は、requirements.txtを修正して必要なものだけpipしてください。
 
 # ディレクトリ構成
 ```
@@ -150,19 +157,23 @@ python embed_chat.py
 
 ## ocr
 - ローカルPCでOCRリーダーを実装するサンプル
-- 2023.5.17時点調査中
-  - 一旦、小さい画像内のシンプルな英文字は読み取り成功
-  - ワーニングがいっぱい出る
-  - ファインチューニングしないといけない
 
 ### 起動方法
 ```
+# 英語のみ読み取れる機能を試す場合
 cd app/deeplearning/ocr
 python ocr_reader.py
+
+# 日本語読み取り機能対応版を試す場合
+cd app/deeplearning/ocr
+python japanese_ocr_reader.py
 ```
 
 ### 特記事項
 - imageディレクトリに解析したい画像ファイルを格納し、ソースコードのimage_pathを修正し、起動してください。
+- ocr_reader.pyは追加学習したいところ。ワーニングを消したい。
+- japanese_ocr_reader.pyを利用する場合は、pytorch_model.binを入手し、japanese_ocr_modeディレクトリに格納してください。
+  - https://huggingface.co/spaces/Detomo/Japanese_OCR/tree/main/model
 
 ## openai
 - GPT3シリーズをファインチューニングして、独自のModelを作成する方法をコード化したものです。

@@ -10,6 +10,9 @@ app/deeplearning/*/storage/*.json
 app/deeplearning/tensorflow/finetuned_model/*
 app/deeplearning/ocr/image/*
 !app/deeplearning/ocr/image/.gitkeep
+!app/deeplearning/ocr/image/screen_shot.png
+!app/deeplearning/ocr/image/screen_shot_jp.png
+app/deeplearning/ocr/japanese_ocr_model/pytorch_model.bin
 youtube_audio/index/*.json
 youtube_audio/transcripts/*.txt
 youtube_audio/transcripts/divide/*.txt

@@ -3,3 +3,16 @@ https://huggingface.co/microsoft/trocr-large-printed
 
 # 他のModelとかファインチューニングを試していきたい
 （参考）https://qiita.com/relu/items/c027c486758525c0b6b9
+
+# japanese_ocr_reader.pyについて
+
+## 実行するには、MeCabの事前インストールが必要
+brew install mecab
+brew install mecab-ipadic
+
+## Modelのダウンロード
+pytorch_model.binが必要。
+444MBと大きいので、gitには格納していない。
+以下からダウンロードして配置してください。
+https://huggingface.co/spaces/Detomo/Japanese_OCR/tree/main/model
+
