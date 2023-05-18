@@ -1,5 +1,5 @@
 {
-  "_name_or_path": "rinna/japanese-gpt2-medium",
+  "_name_or_path": "finetuned/rinna-gpt2",
   "activation_function": "gelu_new",
   "architectures": [
     "GPT2LMHeadModel"

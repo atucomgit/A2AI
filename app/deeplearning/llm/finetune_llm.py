@@ -1,24 +1,23 @@
 import os
 import argparse
-from transformers import T5Tokenizer, AutoModelForCausalLM
-
-EPOCHS = 1
+from transformers import T5Tokenizer, AutoModelForCausalLM, BertJapaneseTokenizer
 
 MODELS = {
-    # 東北大
     "tohoku": {
         "base_model": "cl-tohoku/bert-large-japanese-char",
         "output_dir": "finetuned/cl-tohoku/"
     },
-    # Microsoft:rinna
     "rinna": {
         "base_model": "rinna/japanese-gpt2-medium",
         "output_dir": "finetuned/rinna-gpt2/"
     }
 }
 
-model_type = "rinna"
+# 学習量の定義
+EPOCHS = 1
 
+# 利用するモデルの切り替え
+model_type = "tohoku"
 base_model = MODELS[model_type]["base_model"]
 output_dir = MODELS[model_type]["output_dir"]
 
@@ -27,8 +26,9 @@ def finetune_and_save_model(path_to_dataset):
     setenv = "export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python"
     os.system(setenv)
 
-    print("トレーニング開始")
+    print("---- トレーニング開始 ----")
     print(f"データ：{path_to_dataset}")
+    print(f"Model：{model_type}")
 
     command = 'python ../../../../transformers/examples/tensorflow/language-modeling/run_clm.py ' \
         f'--model_name_or_path={base_model} ' \
@@ -52,7 +52,10 @@ def send_prompt_and_run(prompt):
     """
 
     # トークナイザーとモデルの準備
-    tokenizer = T5Tokenizer.from_pretrained(base_model)
+    if model_type == "tohoku":
+        tokenizer = BertJapaneseTokenizer.from_pretrained(base_model)
+    elif model_type == "rinna":
+        tokenizer = T5Tokenizer.from_pretrained(base_model)
     fine_tuned_model = AutoModelForCausalLM.from_pretrained(output_dir, from_tf=True)
 
     # 推論の実行
@@ -60,6 +63,7 @@ def send_prompt_and_run(prompt):
     start_time = time.time()
     print("----推論開始-------------------------------")
     print(f"Model: {model_type}")
+    print("------------------------------------------")
 
     input = tokenizer.encode(prompt, return_tensors="pt")
     output = fine_tuned_model.generate(input, do_sample=True, max_length=200, num_return_sequences=3)

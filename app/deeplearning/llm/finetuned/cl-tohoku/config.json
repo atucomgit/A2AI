@@ -1,5 +1,5 @@
 {
-  "_name_or_path": "cl-tohoku/bert-large-japanese-char",
+  "_name_or_path": "finetuned/cl-tohoku",
   "architectures": [
     "BertLMHeadModel"
   ],

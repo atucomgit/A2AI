@@ -189,15 +189,17 @@ python finetune_japanese_ocr_reader.py
 - 作成したModelはOpenAI社のクラウド上に格納され、呼び出すごとに課金されます。
 - データを準備する方法や詳細は、同ディレクトリに格納されている「チューニング＆モデル生成手順.txt」を参照してください。
 
-## tensorflow
+## llm
 - TransformerベースのLLMをローカルでファインチューニングするサンプルです。
 - トレーニング後の使い方としては、与えたプロンプトに続く文章を生成させることができます。
-- （チャットではないので注意してください）
+  - （チャットではないので注意してください）
+- finetune_llm.pyの冒頭の、model_typeを修正すると、利用するモデルを切り替えることができます。
+- finetune_llm.pyの冒頭の、EPOCHSを修正すると、学習サイクルを変更することができます。
 
 ### 起動方法
 ```
 cd app/deeplearning/tensorflow 
-python finetune_rinna.py -r
+python finetune_llm.py -r
 ```
 
 ### 代表的な引数
