@@ -43,3 +43,6 @@ python ../../../transformers/examples/tensorflow/language-modeling/run_clm.py \
 # 学習した所感
 文脈はいい感じ。後続文の生成は、だいぶ賢い。
 ただ、FAQは苦手だと思われる。文章生成とFAQは別アーキテクチャが必要か？
+
+# rinna以外は、開発中版の4.30.0.dev0以上のtransformersが必要。pipだと4.29.2までしか入らないため、以下のコマンドでインストールする
+pip install git+https://github.com/huggingface/transformers

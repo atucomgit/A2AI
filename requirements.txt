@@ -6,6 +6,9 @@ datasets
 sentencepiece
 torch
 ipadic
+evaluate
+pytest
+accelerate
 
 # 以下は事前にportaudioが必要
 # brew install portaudio
