@@ -9,6 +9,8 @@ ipadic
 evaluate
 pytest
 accelerate
+tensorflow
+tensorflow_datasets
 
 # 以下は事前にportaudioが必要
 # brew install portaudio

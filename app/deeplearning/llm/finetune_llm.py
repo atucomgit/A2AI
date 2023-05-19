@@ -52,18 +52,22 @@ def finetune_and_save_model(path_to_dataset):
         f'--output_dir={output_dir}'
     
     # お試し実装。Q&A対応モデルになるようにファインチューニングする場合
-    qa_command = "python ../../../../transformers/examples/tensorflow/question-answering/run_qa.py " \
-        f"--model_name_or_path={base_model} " \
-        f'--train_file={path_to_dataset} ' \
-        f'--validation_file={path_to_dataset} ' \
-        '--do_train ' \
-        '--do_eval ' \
-        f'--num_train_epochs={EPOCHS} ' \
-        '--save_steps=5000 ' \
-        '--save_total_limit=3 ' \
-        '--per_device_train_batch_size=1 ' \
-        '--per_device_eval_batch_size=1 ' \
-        f'--output_dir={output_dir}'
+    # 参考）
+    # https://note.com/npaka/n/na8721fdc3e24
+    # 残念ながら、以下はM2MaxのGPUは利用されない模様。ものすごく時間がかかる
+    qa_command = "python ../../../../transformers/examples/legacy/question-answering/run_squad.py " \
+        "--model_type=bert " \
+        f"--model_name_or_path=cl-tohoku/bert-base-japanese-whole-word-masking " \
+        f'--output_dir={output_dir}' \
+        "--train_file=./data_sets/question-answering/DDQA-1.0_RC-QA_train.json " \
+        "--predict_file=./data_sets/question-answering/DDQA-1.0_RC-QA_dev.json " \
+        "--per_gpu_train_batch_size 1 " \
+        "--learning_rate 3e-5 " \
+        "--num_train_epochs 1 " \
+        "--max_seq_length 384 " \
+        "--doc_stride 128 " \
+        "--do_train " \
+        "--do_eval"
 
     os.system(command)
 
