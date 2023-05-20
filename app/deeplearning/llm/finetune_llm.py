@@ -11,7 +11,7 @@ MODELS = {
         "base_model": "rinna/japanese-gpt2-medium",
         "output_dir": "finetuned/rinna-gpt2/"
     },
-    # transformersは"4.30.0.dev0"が必要。利用する場合はインストールしなおしか、vmを切り替える
+    # トレーニングする場合は、transformersは"4.30.0.dev0"が必要。利用する場合はインストールしなおしか、vmを切り替える
     # pip install git+https://github.com/huggingface/transformers
     "tokodai": {
         "framework": "pytorch",
@@ -21,10 +21,11 @@ MODELS = {
 }
 
 # 学習量の定義
-EPOCHS = 1
+EPOCHS = 10
 
 # 利用するモデルの切り替え
 model_type = "rinna"
+# model_type = "tokodai"
 framework = MODELS[model_type]["framework"]
 base_model = MODELS[model_type]["base_model"]
 output_dir = MODELS[model_type]["output_dir"]
@@ -49,7 +50,8 @@ def finetune_and_save_model(path_to_dataset):
         '--save_total_limit=3 ' \
         '--per_device_train_batch_size=1 ' \
         '--per_device_eval_batch_size=1 ' \
-        f'--output_dir={output_dir}'
+        f'--output_dir={output_dir} ' \
+        "--overwrite_output_dir"
     
     # お試し実装。Q&A対応モデルになるようにファインチューニングする場合
     # 参考）
@@ -57,8 +59,8 @@ def finetune_and_save_model(path_to_dataset):
     # 残念ながら、以下はM2MaxのGPUは利用されない模様。ものすごく時間がかかる
     qa_command = "python ../../../../transformers/examples/legacy/question-answering/run_squad.py " \
         "--model_type=bert " \
-        f"--model_name_or_path=cl-tohoku/bert-base-japanese-whole-word-masking " \
-        f'--output_dir={output_dir}' \
+        f"--model_name_or_path=colorfulscoop/bert-base-ja " \
+        f'--output_dir=./finetuned/qa-test' \
         "--train_file=./data_sets/question-answering/DDQA-1.0_RC-QA_train.json " \
         "--predict_file=./data_sets/question-answering/DDQA-1.0_RC-QA_dev.json " \
         "--per_gpu_train_batch_size 1 " \
@@ -67,9 +69,10 @@ def finetune_and_save_model(path_to_dataset):
         "--max_seq_length 384 " \
         "--doc_stride 128 " \
         "--do_train " \
-        "--do_eval"
+        "--do_eval " \
+        "--overwrite_output_dir"
 
-    os.system(command)
+    os.system(qa_command)
 
 def send_prompt_and_run(prompt):
     """
@@ -92,9 +95,10 @@ def send_prompt_and_run(prompt):
     print("-------------------------------------------")
 
     input = tokenizer.encode(prompt, return_tensors="pt")
-    output = fine_tuned_model.generate(input, do_sample=True, max_length=200, num_return_sequences=1)
+    output = fine_tuned_model.generate(input, do_sample=True, max_length=300, num_return_sequences=1)
     decoded_output = tokenizer.batch_decode(output, skip_special_tokens=True)
     result_text = '\n'.join(decoded_output)
+    result_text = result_text.replace(" ", "")
     print(result_text)
 
     end_time = time.time()
