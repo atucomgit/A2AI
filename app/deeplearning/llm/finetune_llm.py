@@ -72,7 +72,17 @@ def finetune_and_save_model(path_to_dataset):
         "--do_eval " \
         "--overwrite_output_dir"
 
-    os.system(qa_command)
+    # お試し実装。tensorflowでQ&A対応モデルになるようにファインチューニングする場合
+    # 悩み1) QAデータをどういうふうに食わせれば良いか不明。train_fileを指定すると落ちる。
+    # 悩み2) 最新のkerasだと遅くなる警告が出る・・・（macでやるにはしんどいか・・・）
+    qa_command = "python ../../../../transformers/examples/tensorflow/question-answering/run_qa.py " \
+        f"--model_name_or_path=colorfulscoop/bert-base-ja " \
+        f'--output_dir=./finetuned/qa ' \
+        "--dataset_name=squad " \
+        "--do_train " \
+        "--do_eval "
+
+    os.system(command)
 
 def send_prompt_and_run(prompt):
     """
