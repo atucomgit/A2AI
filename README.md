@@ -15,6 +15,7 @@ pip install -r requirements.txt
 A2AI
   /app
     /deeplearning : ディープラーニング系のプログラムを格納
+    /docgen : 報告書（等）作成ツール
     /srcgen : プログラム自動生成系の機能を格納
     /utils : いろんなツール群
   /definition : spqa_framework.pyが参照するプログラム自動生成定義ファイルを配置
