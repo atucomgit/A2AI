@@ -3,12 +3,13 @@ import logging
 import sys
 from llama_index import GPTVectorStoreIndex, SimpleDirectoryReader, StorageContext, load_index_from_storage, LLMPredictor, PromptHelper, ServiceContext
 from llama_index.data_structs.node import Node
-from langchain.chat_models import ChatOpenAI
+# from langchain.chat_models import ChatOpenAI <-うまくllama_indexで判定が効かないので、一旦コメントアウト
+from langchain import OpenAI
 
 import argparse
 import os
 
-sys.path.append("../utils")
+sys.path.append("../../utils")
 import speech_input
 
 
@@ -59,21 +60,28 @@ def recursive_create_new_index(directory_path, save_dir):
     index.storage_context.persist(save_dir)
 
 def create_service_context():
-    # max_tokensの設定
-    llm_predictor = LLMPredictor(
-        llm=ChatOpenAI(
-            temperature=0.7, 
-            model_name="ada", 
-            max_tokens=4096
+    # max_tokensの設定の苦労日記
+    ## 下記、max_tokensは効かない。無理やり効かせるためには、下記OpenAIクラスのmax_tokensを直接修正する必要あり。
+    ## なお、以下の引数がどのような分岐で扱われているかは、LLMPredictor._get_llm_metadata()のソースを確認するとわかりやすい。
+    chat_open_ai = OpenAI(
+            temperature=0.7,
+            model_name="ada",
+            max_tokens=3000
         )
+
+    llm_predictor = LLMPredictor(
+        llm=chat_open_ai
     )
     prompt_helper = PromptHelper(
-        max_input_size = 4096,
-        num_output = 1024,
-        max_chunk_overlap = 20,
-        chunk_size_limit = 600
+        max_input_size=4096,
+        num_output=1024,
+        max_chunk_overlap=20,
+        chunk_size_limit=600
     )
-    return ServiceContext.from_defaults(llm_predictor=llm_predictor, prompt_helper=prompt_helper)
+    return ServiceContext.from_defaults(
+        llm_predictor=llm_predictor,
+        prompt_helper=prompt_helper
+    )
 
 def chat(save_dir, prompt):
 
