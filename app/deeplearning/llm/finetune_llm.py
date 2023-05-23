@@ -1,10 +1,17 @@
 import os
 import argparse
 import torch
-from transformers import T5Tokenizer, AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
+# 以下、頭良い順に並べる
 MODELS = {
-    # tramsformersは"4.29.2"が必要。利用する場合はインストールしなおしか、vmを切り替える
+    # トレーニングはtransformersは"4.30.0.dev0"で大丈夫
+    "rinna-instruct": {
+        "framework": "pytorch",
+        "base_model": "rinna/japanese-gpt-neox-3.6b-instruction-sft",
+        "output_dir": "finetuned/rinna-instruct/"
+    },
+    # トレーニングする場合は、tramsformersは"4.29.2"が必要。利用する場合はインストールしなおしか、vmを切り替える
     # pip unistall transformers
     # pip install transformers
     "rinna": {
@@ -12,18 +19,19 @@ MODELS = {
         "base_model": "rinna/japanese-gpt2-medium",
         "output_dir": "finetuned/rinna-gpt2/"
     },
-    "rinna-instruct": {
-        "framework": "pytorch",
-        "base_model": "rinna/japanese-gpt-neox-3.6b-instruction-sft",
-        "output_dir": "finetuned/rinna-instruct/"
-    },
     # トレーニングする場合は、transformersは"4.30.0.dev0"が必要。利用する場合はインストールしなおしか、vmを切り替える
     # pip install git+https://github.com/huggingface/transformers
     "tokodai": {
         "framework": "pytorch",
         "base_model": "okazaki-lab/japanese-gpt2-medium-unidic",
         "output_dir": "finetuned/tokodai-gpt2/"
-    }
+    },
+    # トレーニングする場合は、transformersは"4.30.0.dev0"が必要。
+    "waseda": {
+        "framework": "pytorch",
+        "base_model": "nlp-waseda/gpt2-small-japanese",
+        "output_dir": "finetuned/waseda-gpt2/"
+    }   
 }
 
 # 学習量の定義
@@ -33,6 +41,7 @@ EPOCHS = 1
 # model_type = "rinna"
 model_type = "rinna-instruct"
 # model_type = "tokodai"
+# model_type = "waseda"
 framework = MODELS[model_type]["framework"]
 base_model = MODELS[model_type]["base_model"]
 output_dir = MODELS[model_type]["output_dir"]
@@ -47,6 +56,7 @@ def finetune_and_save_model(path_to_dataset):
     print(f"Model：{model_type}")
 
     # Pytorchタイプのモデルで、Apple Silliconを利用する場合、use_mps_device引数を与えるとGPUを利用してくれる
+    # 詳細は、transformers/src/training_args.pyに書いてある。
     command = f'python ../../../../transformers/examples/{framework}/language-modeling/run_clm.py ' \
         f'--model_name_or_path={base_model} ' \
         f'--train_file={path_to_dataset} ' \
