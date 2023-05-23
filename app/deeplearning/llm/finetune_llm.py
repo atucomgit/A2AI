@@ -159,7 +159,7 @@ def chat_with_rinna_instruct():
         print("-------------------------------------------")
 
         tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
-        output = fine_tuned_model.generate(tokenized_prompt, do_sample=True, max_length=300, num_return_sequences=1)
+        output = fine_tuned_model.generate(tokenized_prompt, do_sample=True, max_length=1000, num_return_sequences=2)
         decoded_output = tokenizer.batch_decode(output, skip_special_tokens=True)
         result_text = '\n'.join(decoded_output)
         result_text = result_text.replace(" ", "")
