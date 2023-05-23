@@ -1,5 +1,6 @@
 import os
 import argparse
+import torch
 from transformers import T5Tokenizer, AutoModelForCausalLM, AutoTokenizer
 
 MODELS = {
@@ -11,6 +12,11 @@ MODELS = {
         "base_model": "rinna/japanese-gpt2-medium",
         "output_dir": "finetuned/rinna-gpt2/"
     },
+    "rinna-instruct": {
+        "framework": "pytorch",
+        "base_model": "rinna/japanese-gpt-neox-3.6b-instruction-sft",
+        "output_dir": "finetuned/rinna-instruct/"
+    },
     # トレーニングする場合は、transformersは"4.30.0.dev0"が必要。利用する場合はインストールしなおしか、vmを切り替える
     # pip install git+https://github.com/huggingface/transformers
     "tokodai": {
@@ -21,10 +27,11 @@ MODELS = {
 }
 
 # 学習量の定義
-EPOCHS = 10
+EPOCHS = 1
 
 # 利用するモデルの切り替え
-model_type = "rinna"
+# model_type = "rinna"
+model_type = "rinna-instruct"
 # model_type = "tokodai"
 framework = MODELS[model_type]["framework"]
 base_model = MODELS[model_type]["base_model"]
@@ -39,6 +46,7 @@ def finetune_and_save_model(path_to_dataset):
     print(f"データ：{path_to_dataset}")
     print(f"Model：{model_type}")
 
+    # Pytorchタイプのモデルで、Apple Silliconを利用する場合、use_mps_device引数を与えるとGPUを利用してくれる
     command = f'python ../../../../transformers/examples/{framework}/language-modeling/run_clm.py ' \
         f'--model_name_or_path={base_model} ' \
         f'--train_file={path_to_dataset} ' \
@@ -51,12 +59,14 @@ def finetune_and_save_model(path_to_dataset):
         '--per_device_train_batch_size=1 ' \
         '--per_device_eval_batch_size=1 ' \
         f'--output_dir={output_dir} ' \
-        "--overwrite_output_dir"
+        "--overwrite_output_dir " \
+        "--use_mps_device=True "
     
     # お試し実装。Q&A対応モデルになるようにファインチューニングする場合
     # 参考）
     # https://note.com/npaka/n/na8721fdc3e24
     # 残念ながら、以下はM2MaxのGPUは利用されない模様。ものすごく時間がかかる
+    # （残念ながら、legacyではuse_mps_device引数が使えない）
     qa_command = "python ../../../../transformers/examples/legacy/question-answering/run_squad.py " \
         "--model_type=bert " \
         f"--model_name_or_path=colorfulscoop/bert-base-ja " \
@@ -70,17 +80,21 @@ def finetune_and_save_model(path_to_dataset):
         "--doc_stride 128 " \
         "--do_train " \
         "--do_eval " \
-        "--overwrite_output_dir"
+        "--overwrite_output_dir "
 
     # お試し実装。tensorflowでQ&A対応モデルになるようにファインチューニングする場合
     # 悩み1) QAデータをどういうふうに食わせれば良いか不明。train_fileを指定すると落ちる。
-    # 悩み2) 最新のkerasだと遅くなる警告が出る・・・（macでやるにはしんどいか・・・）
+    # 悩み2) 最新のkerasだと遅くなる警告が出る・・・（macでやるにはしんどいか・・・）→ use_mps_device。正。元データのsquadが大きいので、超遅い。
+    # 悩み3）trainデータをsquad形式のjsonを用意してdataset_nameに配置しても、なぜか落ちる。データ形式が違うと言われてしまう。
     qa_command = "python ../../../../transformers/examples/tensorflow/question-answering/run_qa.py " \
         f"--model_name_or_path=colorfulscoop/bert-base-ja " \
         f'--output_dir=./finetuned/qa ' \
         "--dataset_name=squad " \
+        "--num_train_epochs 1 " \
+        "--per_gpu_train_batch_size 1 " \
         "--do_train " \
-        "--do_eval "
+        "--do_eval " \
+        "--use_mps_device=True "
 
     os.system(command)
 
@@ -89,7 +103,6 @@ def send_prompt_and_run(prompt):
     この関数はプロンプトに対する応答を生成し、表示します。
     prompt: 応答を生成するためのプロンプト
     """
-
     tokenizer = AutoTokenizer.from_pretrained(base_model)
     
     if framework == "tensorflow":
@@ -116,6 +129,47 @@ def send_prompt_and_run(prompt):
     print("----推論終了-------------------------------")
     print(f"処理時間: {elapsed_time:.3f}秒")
 
+def chat_with_rinna_instruct():
+    """
+    rinna_instructとチャットするメソッドです
+    後ほど↑のメソッドと合流して一つに整理します。
+    """
+    print(f"TORCHの状況：{torch.backends.mps.is_available()}")
+    tokenizer = AutoTokenizer.from_pretrained(base_model)
+    
+    if framework == "tensorflow":
+        fine_tuned_model = AutoModelForCausalLM.from_pretrained(output_dir, from_tf=True)
+    elif framework == "pytorch":
+        fine_tuned_model = AutoModelForCausalLM.from_pretrained(output_dir)
+
+    while True:
+        user_input = input("りんなとチャットしましょう：")
+        prompt = ""
+        if user_input:
+            prompt = f"ユーザー: {user_input}<NL>システム:"
+        else:
+            print("冒頭の文が未指定だったので、処理をキャンセルしました。")
+            continue
+
+        # 推論の実行
+        import time
+        start_time = time.time()
+        print("----推論開始-------------------------------")
+        print(f"Model: {model_type}")
+        print("-------------------------------------------")
+
+        tokenized_prompt = tokenizer.encode(prompt, return_tensors="pt")
+        output = fine_tuned_model.generate(tokenized_prompt, do_sample=True, max_length=300, num_return_sequences=1)
+        decoded_output = tokenizer.batch_decode(output, skip_special_tokens=True)
+        result_text = '\n'.join(decoded_output)
+        result_text = result_text.replace(" ", "")
+        print(result_text)
+
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print("----推論終了-------------------------------")
+        print(f"処理時間: {elapsed_time:.3f}秒")
+
 def create_qa_train_data():
     """question-answeri"""
     import json
@@ -140,13 +194,17 @@ if __name__ == "__main__":
     parser.add_argument('-qt', '--question_train', action='store_true', help='Fine-tune question-answering the model.')
     parser.add_argument('-r', '--run', action='store_true', help='Generate a response to a prompt.')
     parser.add_argument('-c', '--create_data', action='store_true', help='Generate training data.')
+    parser.add_argument('-ri', '--rinna_instruct', action='store_true', help='rinna-instructでチャットする場合.')
     args = parser.parse_args()
 
     if args.create_data:
         create_qa_train_data()
     else:
         if args.train:
-            finetune_and_save_model('./data_sets/language-modeling/mujunss_mail.txt')
+            if model_type == "rinna-instruct":
+                print("すごい時間がかかりますが本当に学習しますか？学習する場合は、この部分の分岐をソース修正してください")
+            else:
+                finetune_and_save_model('./data_sets/language-modeling/mujunss_mail.txt')
         elif args.question_train:
             finetune_and_save_model('./data_sets/question-answering/qa_data.json')             
         elif args.run:
@@ -155,5 +213,8 @@ if __name__ == "__main__":
                 send_prompt_and_run(prompt)
             else:
                 print("冒頭の文が未指定だったので、処理をキャンセルしました。")
+        elif args.rinna_instruct:
+            print("**** チャットモードに入ります。終了する場合は、ctrl＋cを押してください。 ****")
+            chat_with_rinna_instruct()
         else:
             print("Specify either -t for training or -r PROMPT for running.")
