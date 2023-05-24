@@ -34,6 +34,21 @@ MODELS = {
     }   
 }
 
+"""
+ファインチューニングでの賢さランキング
+チャット
+1. GPT3-ADAでのembed（会話は自然）
+2. rinna-neox-3.6b-instruction (内容は本物の狙った人格っぽい)　*1位と2位は肉薄
+3. （その他は未チューニング）
+
+文書生成
+1. rinna-neox-3.6b-instruction（ラジオ番組の回など、特殊なエッセイ形式も生成できた）
+2. GPT3-ADAでのembed
+3. rinna / tokodai
+4. GPT3-Davinciでのファインチューニング（データの作りに問題があったかも）
+5. waseda small
+"""
+
 # 学習量の定義
 EPOCHS = 1
 
@@ -81,6 +96,7 @@ def finetune_and_save_model(path_to_dataset):
     # device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
     # 　↓
     # device = torch.device("mps")
+    # （ただし！ファインチューニング後のモデルが350GBになってしまうので、何かがおかしい気がする・・・）
     qa_command = "python ../../../../transformers/examples/legacy/question-answering/run_squad.py " \
         "--model_type=bert " \
         f"--model_name_or_path=colorfulscoop/bert-base-ja " \
