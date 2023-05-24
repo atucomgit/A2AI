@@ -38,8 +38,8 @@ MODELS = {
 EPOCHS = 1
 
 # 利用するモデルの切り替え
-# model_type = "rinna"
-model_type = "rinna-instruct"
+model_type = "rinna"
+# model_type = "rinna-instruct"
 # model_type = "tokodai"
 # model_type = "waseda"
 framework = MODELS[model_type]["framework"]
@@ -77,6 +77,10 @@ def finetune_and_save_model(path_to_dataset):
     # https://note.com/npaka/n/na8721fdc3e24
     # 残念ながら、以下はM2MaxのGPUは利用されない模様。ものすごく時間がかかる
     # （残念ながら、legacyではuse_mps_device引数が使えない）
+    # 解決！！！ run_squad.pyの708行目がcudaしか対応していないため、mpsに修正すると、M2MAXのGPUを使ってくれる
+    # device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
+    # 　↓
+    # device = torch.device("mps")
     qa_command = "python ../../../../transformers/examples/legacy/question-answering/run_squad.py " \
         "--model_type=bert " \
         f"--model_name_or_path=colorfulscoop/bert-base-ja " \
@@ -94,19 +98,19 @@ def finetune_and_save_model(path_to_dataset):
 
     # お試し実装。tensorflowでQ&A対応モデルになるようにファインチューニングする場合
     # 悩み1) QAデータをどういうふうに食わせれば良いか不明。train_fileを指定すると落ちる。
-    # 悩み2) 最新のkerasだと遅くなる警告が出る・・・（macでやるにはしんどいか・・・）→ use_mps_device。正。元データのsquadが大きいので、超遅い。
+    # 悩み2) 最新のkerasだと遅くなる警告が出る・・・（macでやるにはしんどいか・・・）→(解決！)use_mps_device引数でGPU使ってくれる。でも元データのsquadが大きいので、超遅い。
     # 悩み3）trainデータをsquad形式のjsonを用意してdataset_nameに配置しても、なぜか落ちる。データ形式が違うと言われてしまう。
-    qa_command = "python ../../../../transformers/examples/tensorflow/question-answering/run_qa.py " \
-        f"--model_name_or_path=colorfulscoop/bert-base-ja " \
-        f'--output_dir=./finetuned/qa ' \
-        "--dataset_name=squad " \
-        "--num_train_epochs 1 " \
-        "--per_gpu_train_batch_size 1 " \
-        "--do_train " \
-        "--do_eval " \
-        "--use_mps_device=True "
+    # qa_command = "python ../../../../transformers/examples/tensorflow/question-answering/run_qa.py " \
+    #     f"--model_name_or_path=colorfulscoop/bert-base-ja " \
+    #     f'--output_dir=./finetuned/qa ' \
+    #     "--dataset_name=squad " \
+    #     "--num_train_epochs 1 " \
+    #     "--per_gpu_train_batch_size 1 " \
+    #     "--do_train " \
+    #     "--do_eval " \
+    #     "--use_mps_device=True "
 
-    os.system(command)
+    os.system(qa_command)
 
 def send_prompt_and_run(prompt):
     """
