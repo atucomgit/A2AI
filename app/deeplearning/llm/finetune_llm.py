@@ -110,7 +110,7 @@ def finetune_and_save_model(path_to_dataset):
     #     "--do_eval " \
     #     "--use_mps_device=True "
 
-    os.system(qa_command)
+    os.system(command)
 
 def send_prompt_and_run(prompt):
     """
