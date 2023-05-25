@@ -217,6 +217,44 @@ def create_qa_train_data():
     with open(file_path, "w", encoding="utf-8") as file:
         json.dump(data, file, ensure_ascii=False)
 
+def save_tokenizer():
+    # トークナイザーのインスタンス化
+    base_model = "cyberagent/open-calm-small"
+    tokenizer = AutoTokenizer.from_pretrained(base_model)
+
+    # トークナイザーの保存
+    tokenizer.save_pretrained("./tokenizer")
+
+def convert_to_ggml():
+    from llm_rs.convert import AutoConverter
+
+    # Specify the model to be converted and an output directory
+    export_folder = "./ggml" 
+    base_model = "./finetuned/open-calm/"
+
+    # Perform the model conversion
+    converted_model = AutoConverter.convert(base_model, export_folder)
+    print(f"ggml形式に変換完了：{converted_model}")
+
+    from llm_rs import Mpt, QuantizationType, ContainerType
+
+    # Mpt.quantize(converted_model,
+    #     "./ggml/-f16_4_0.bin",
+    #     quantization=QuantizationType.Q4_0,
+    #     container=ContainerType.GGJT
+    # )
+
+    print("Modelをロード")
+    model = Mpt(converted_model)
+
+    print("トークを開始")
+    # Initiate a text generation
+    result = model.generate("The meaning of life is")
+
+    # Display the generated text
+    print(result.text)
+
+
 if __name__ == "__main__":
     # 引数のパーサを作成
     parser = argparse.ArgumentParser(description='Train or run a fine-tuned GPT-2 model.')
@@ -225,6 +263,8 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--run', action='store_true', help='Generate a response to a prompt.')
     parser.add_argument('-c', '--create_data', action='store_true', help='Generate training data.')
     parser.add_argument('-ri', '--rinna_instruct', action='store_true', help='rinna-instructでチャットする場合.')
+    parser.add_argument('-st', '--save_tokenizer', action='store_true', help='そのモデルが利用するトークナイザーを保存します.')
+    parser.add_argument('-cg', '--convert_to_ggml', action='store_true', help='ggml形式にコンバートします.')
     args = parser.parse_args()
 
     if args.create_data:
@@ -246,5 +286,9 @@ if __name__ == "__main__":
         elif args.rinna_instruct:
             print("**** チャットモードに入ります。終了する場合は、ctrl＋cを押してください。 ****")
             chat_with_rinna_instruct()
+        elif args.save_tokenizer:
+            save_tokenizer()
+        elif args.convert_to_ggml:
+            convert_to_ggml()
         else:
             print("Specify either -t for training or -r PROMPT for running.")

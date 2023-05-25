@@ -11,6 +11,8 @@ pytest
 accelerate
 tensorflow
 tensorflow_datasets
+bitsandbytes
+loralib
 
 # 以下は事前にportaudioが必要
 # brew install portaudio
