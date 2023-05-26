@@ -4,26 +4,24 @@ from transformers import AutoModelForCausalLM
 from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, TaskType
 import transformers
 
-import torch
-from peft import PeftModel, PeftConfig
+from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import argparse
 
 # 基本パラメータ
-model_name = "cyberagent/open-calm-medium"
-dataset = "kunishou/databricks-dolly-15k-ja"
-peft_name = "finetuned/lora-calm-medium"
-output_dir = "tmp_finetuned-LoRA"
+BASE_MODEL = "cyberagent/open-calm-medium"  # LoRAのベースとなるモデル
+DATA_SET = "kunishou/databricks-dolly-15k-ja"  # LoRAに学習させたいデータセット
+PEFT_MODEL = "finetuned/lora-calm-medium"  # LoRAしたモデルの出力先
+output_dir = "tmp_finetuned-LoRA"  # ここに出力されるものは、トレーニング完了後に削除してしまってOK
 
 def train():
     # 
     # 1. トークナイザーの準備
     #
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-    CUTOFF_LEN = 256  # 最大長
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 
     # トークナイズ関数の定義
+    CUTOFF_LEN = 256  # 最大長
     def tokenize(prompt, tokenizer):
         result = tokenizer(
             prompt+"<|endoftext|>",
@@ -66,7 +64,7 @@ def train():
     #
     # (参考) "kunishou/databricks-dolly-15k-ja"の中身
     # https://raw.githubusercontent.com/kunishou/databricks-dolly-15k-ja/main/databricks-dolly-15k-ja.json
-    data = load_dataset(dataset)
+    data = load_dataset(DATA_SET)
 
     # データセットの確認
     print(data["train"][5])
@@ -89,7 +87,7 @@ def train():
     # 3. モデルの準備
     #
     model = AutoModelForCausalLM.from_pretrained(
-        model_name,
+        BASE_MODEL,
         # load_in_8bit=True,  # Macだとこれ無理
         device_map="auto",
         llm_int8_enable_fp32_cpu_offload=True,  # Macだとこれ必要
@@ -118,6 +116,7 @@ def train():
     #
     # 4. トレーニング
     #
+    epochs = 1
     max_steps = 200    # GPUで時間がある場合はこれを除外するとたくさん訓練する、
     eval_steps = 200
     save_steps = 200
@@ -129,7 +128,7 @@ def train():
         train_dataset=train_data,
         eval_dataset=val_data,
         args=transformers.TrainingArguments(
-            num_train_epochs=3,
+            num_train_epochs=epochs,
             learning_rate=3e-4,
             logging_steps=logging_steps,
             evaluation_strategy="steps",
@@ -153,15 +152,14 @@ def train():
     model.config.use_cache = True
 
     # LoRAモデルの保存
-    trainer.model.save_pretrained(peft_name)
-
+    trainer.model.save_pretrained(PEFT_MODEL)
 
 def run(prompt):
 
     # モデルの準備
     # LoRAを8bit量子化で作っているので、実行時はベースモデルも8bit量子化する
     model = AutoModelForCausalLM.from_pretrained(
-        model_name,
+        BASE_MODEL,
         # load_in_8bit=True,  # MacだとこれはNG
         device_map="auto",
         llm_int8_enable_fp32_cpu_offload=True,  # Macだとこれ必要
@@ -169,13 +167,13 @@ def run(prompt):
     )
 
     # トークナイザーの準備
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 
     # LoRAモデルの準備
     # ベースのモデルとLoRAモデルを結合させて取得
     model = PeftModel.from_pretrained(
         model, 
-        peft_name, 
+        PEFT_MODEL, 
         device_map="auto"
     )
 
@@ -244,7 +242,9 @@ if __name__ == "__main__":
     parser.add_argument('-r', '--run', action='store_true', help='Run the model.')
     args = parser.parse_args()
 
-    if args.run:
+    if args.train:
+        train()
+    elif args.run:
         prompt = input("質問：")
         if not prompt:
             prompt = "まどか☆マギカで一番かわいいのは？"

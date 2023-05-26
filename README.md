@@ -192,6 +192,8 @@ python finetune_japanese_ocr_reader.py
 - データを準備する方法や詳細は、同ディレクトリに格納されている「チューニング＆モデル生成手順.txt」を参照してください。
 
 ## llm
+
+### finetune_llm.py
 - TransformerベースのLLMをローカルでファインチューニングするサンプルです。
 - トレーニング後の使い方としては、与えたプロンプトに続く文章を生成させることができます。
   - （チャットではないので注意してください）
@@ -200,7 +202,7 @@ python finetune_japanese_ocr_reader.py
 
 ### 起動方法
 ```
-cd app/deeplearning/tensorflow 
+cd app/deeplearning/llm 
 python finetune_llm.py -r
 ```
 
@@ -226,4 +228,32 @@ git clone https://github.com/tak6uch1/cuda-tensorflow.git
 
 「環境設定コマンド.txt」にも記載していますが、以下の環境変数設定も必要です。
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+```
+
+### peft_llm.py
+- PEFTを利用してLoRAするサンプルです。
+- 冒頭にLoRAしたい対象のModel, DataSetを設定できますので、書き換えて利用してください。
+- 8bit量子化する手法も学べますので、ソースを確認してください。
+- トレーニング後、output_dirに設定しているファイルは削除してしまってOKです。起動に必要なのはPEFT_MODELです。
+- 参考文献は[コチラ](https://note.com/npaka/n/na5b8e6f749ce)です。（必見）
+- ほぼ参考文献通りのソースですが、MacBookで動くようにコード修正しています。
+- 利用しているデータセットの中身を確認した場合は[コチラ](https://raw.githubusercontent.com/kunishou/databricks-dolly-15k-ja/main/databricks-dolly-15k-ja.json)をクリック。
+
+### 起動方法
+```
+cd app/deeplearning/llm 
+python peft_llm.py -t
+python peft_llm.py -r
+```
+
+### 代表的な引数
+| コマンド   | 説明                                                         |
+|------------|--------------------------------------------------------------|
+| -t         | トレーニングしてLoRAモデルを生成                     |
+| -r         | トレーニングしたLoRAModelに対してChat                              |
+
+### 注意事項
+```
+LoRAする上で、AppleSillicon(M1/M2)を使わせるところまではできていません。
+したがって、1bクラスくらいまでしか、トレーニングできないと思われます。
 ```
