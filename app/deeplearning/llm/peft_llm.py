@@ -89,10 +89,9 @@ def train():
     
     model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
+        llm_int8_enable_fp32_cpu_offload=True  # Macの場合の8bit量子化はこの引数
         # load_in_8bit=True,  # Macだとこれ無理
-        # device_map="auto",
-        # llm_int8_enable_fp32_cpu_offload=True,  # Macだとこれ必要：ただし、use_mps_deviceと相反するため、量子化しない方が良い（GPU使ったほうが早い）
-        # offload_folder="offload",  # Macだとこれ必要：ただし、use_mps_deviceと相反するため、量子化しない方が良い（GPU使ったほうが早い）
+        # device_map="auto",  # Macの場合、use_mps_deviceと相反するためauto指定は厳禁！
     )
 
     # LoRAのパラメータ
@@ -118,8 +117,8 @@ def train():
     #
     # 4. トレーニング
     #
-    epochs = 3
-    max_steps = 4800
+    epochs = 1
+    max_steps = 200
     eval_steps = 200
     save_steps = 200
     logging_steps = 20
@@ -144,7 +143,7 @@ def train():
             save_total_limit=3,
             push_to_hub=False,
             auto_find_batch_size=True,
-            use_mps_device=True  # Macの場合、この引数を足すとGPUを利用してくれる。その代わり、8bit量子化でModelを取得すると動かないので注意！
+            use_mps_device=True  # Macの場合、この引数を足すとGPUを利用してくれる
         ),
         data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
@@ -157,11 +156,18 @@ def train():
     # LoRAモデルの保存
     trainer.model.save_pretrained(PEFT_MODEL)
 
+    # 不要なディレクトリの削除
+    import shutil
+    shutil.rmtree(output_dir)
+
 def run(prompt):
 
     # モデルの準備
     # LoRAを8bit量子化で作っているので、実行時はベースモデルも8bit量子化する
-    model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
+    model = AutoModelForCausalLM.from_pretrained(
+        BASE_MODEL,
+        llm_int8_enable_fp32_cpu_offload=True
+        )
 
     # トークナイザーの準備
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
@@ -169,11 +175,7 @@ def run(prompt):
     # LoRAモデルの準備
     # 以下の処理では、ベースのモデルとLoRAモデルを両方ともメモリにロードしている
     # ちなみに、以下で取得するmodelをsave_pretrained()すると、LoRAモデルだけ保存される
-    model = PeftModel.from_pretrained(
-        model, 
-        PEFT_MODEL, 
-        device_map="auto"
-    )
+    model = PeftModel.from_pretrained(model, PEFT_MODEL)
 
     # 評価モード
     model.eval()

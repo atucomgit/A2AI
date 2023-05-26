@@ -254,21 +254,19 @@ python peft_llm.py -r
 
 ### 注意事項
 ```
-LoRAする上で、AppleSillicon(M1/M2)を使わせるためには、8bit量子化はNG。
-したがって、GPUのメモリ効率化は図れない模様。
+LoRAする上で、AppleSillicon(M1/M2)を使わせるためには、device_mapでautoを指定するのは厳禁。
+（RuntimeError: Placeholder storage has not been allocated on MPS device!　エラーが起きる）
 
-# ちなみに、8bit量子化してModelを取得する方法のMac版は以下の通り。
+# 8bit量子化してModelを取得する方法のMac版は以下の通り。
     model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
-        device_map="auto",
         llm_int8_enable_fp32_cpu_offload=True,
-        offload_folder="offload"
     )
 
 # ネットでよく見つかるcuda版は以下の通り。
     model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
         load_in_8bit=True,  # Macだとこれ無理
-        device_map="auto"
+        device_map="auto"   # device_map指定するとMacだと落ちる
     )
 ```
