@@ -116,8 +116,8 @@ def train():
     #
     # 4. トレーニング
     #
-    epochs = 1
-    max_steps = 200    # GPUで時間がある場合はこれを除外するとたくさん訓練する、
+    epochs = 3
+    max_steps = 200    # GPUを使えて、時間がある場合はこれを除外するとたくさん訓練するが、Macでは厳しい。
     eval_steps = 200
     save_steps = 200
     logging_steps = 20
@@ -170,7 +170,7 @@ def run(prompt):
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 
     # LoRAモデルの準備
-    # ベースのモデルとLoRAモデルを結合させて取得
+    # ベースのモデルとLoRAモデルを結合させて取得しているのかと思ったら、LoRAモデルだけを取得していた
     model = PeftModel.from_pretrained(
         model, 
         PEFT_MODEL, 
@@ -201,7 +201,7 @@ def run(prompt):
             ### Response:"""
     
     # テキスト生成関数の定義
-    def generate(instruction,input=None,maxTokens=256):
+    def generate(instruction, input=None, maxTokens=256):
         # 推論
         prompt = generate_prompt({'instruction':instruction,'input':input})
         input_ids = tokenizer(prompt, return_tensors="pt", truncation=False).input_ids  # Macでは、ラストの.cuda()は削除
