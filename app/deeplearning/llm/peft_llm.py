@@ -1,6 +1,6 @@
 from transformers import AutoTokenizer
 from datasets import load_dataset
-from transformers import AutoModelForCausalLM
+from transformers import AutoModelForCausalLM, AutoConfig
 from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, TaskType
 import transformers
 
@@ -86,12 +86,13 @@ def train():
     #
     # 3. モデルの準備
     #
+    
     model = AutoModelForCausalLM.from_pretrained(
         BASE_MODEL,
         # load_in_8bit=True,  # Macだとこれ無理
-        device_map="auto",
-        llm_int8_enable_fp32_cpu_offload=True,  # Macだとこれ必要
-        offload_folder="offload"  # Macだとこれ必要
+        # device_map="auto",
+        # llm_int8_enable_fp32_cpu_offload=True,  # Macだとこれ必要：ただし、use_mps_deviceと相反するため、量子化しない方が良い（GPU使ったほうが早い）
+        # offload_folder="offload",  # Macだとこれ必要：ただし、use_mps_deviceと相反するため、量子化しない方が良い（GPU使ったほうが早い）
     )
 
     # LoRAのパラメータ
@@ -118,7 +119,7 @@ def train():
     # 4. トレーニング
     #
     epochs = 3
-    max_steps = 200    # GPUを使えて、時間がある場合はこれを除外するとたくさん訓練するが、Macでは厳しい。
+    max_steps = 4800
     eval_steps = 200
     save_steps = 200
     logging_steps = 20
@@ -142,7 +143,8 @@ def train():
             report_to="none",
             save_total_limit=3,
             push_to_hub=False,
-            auto_find_batch_size=True
+            auto_find_batch_size=True,
+            use_mps_device=True  # Macの場合、この引数を足すとGPUを利用してくれる。その代わり、8bit量子化でModelを取得すると動かないので注意！
         ),
         data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
     )
@@ -159,13 +161,7 @@ def run(prompt):
 
     # モデルの準備
     # LoRAを8bit量子化で作っているので、実行時はベースモデルも8bit量子化する
-    model = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL,
-        # load_in_8bit=True,  # MacだとこれはNG
-        device_map="auto",
-        llm_int8_enable_fp32_cpu_offload=True,  # Macだとこれ必要
-        # offload_folder="offload"  # Macだとこれ必要（要らんかも？）
-    )
+    model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
 
     # トークナイザーの準備
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
