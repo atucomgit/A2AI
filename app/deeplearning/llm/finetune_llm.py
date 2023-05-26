@@ -11,7 +11,8 @@ MODELS = {
         "base_model": "rinna/japanese-gpt-neox-3.6b-instruction-sft",
         "output_dir": "finetuned/rinna-instruct/"
     },
-    # トレーニングする場合は、tramsformersは"4.29.2"が必要。利用する場合はインストールしなおしか、vmを切り替える
+    # トレーニングする場合は、tramsformersは"4.29.2"が必要。No module named 'keras.engine'エラーが出る。
+    # 利用する場合はインストールしなおしか、vmを切り替える
     # pip unistall transformers
     # pip install transformers
     "rinna": {
@@ -53,9 +54,9 @@ MODELS = {
 EPOCHS = 1
 
 # 利用するモデルの切り替え
-model_type = "rinna"
+# model_type = "rinna"
 # model_type = "rinna-instruct"
-# model_type = "tokodai"
+model_type = "tokodai"
 # model_type = "waseda"
 framework = MODELS[model_type]["framework"]
 base_model = MODELS[model_type]["base_model"]
