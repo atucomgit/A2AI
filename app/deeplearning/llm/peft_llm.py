@@ -171,7 +171,8 @@ def run(prompt):
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 
     # LoRAモデルの準備
-    # ベースのモデルとLoRAモデルを結合させて取得しているのかと思ったら、LoRAモデルだけを取得していた
+    # 以下の処理では、ベースのモデルとLoRAモデルを両方ともメモリにロードしている
+    # ちなみに、以下で取得するmodelをsave_pretrained()すると、LoRAモデルだけ保存される
     model = PeftModel.from_pretrained(
         model, 
         PEFT_MODEL, 
