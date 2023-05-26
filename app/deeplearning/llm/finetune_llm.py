@@ -13,7 +13,7 @@ MODELS = {
     },
     # トレーニングする場合は、tramsformersは"4.29.2"が必要。No module named 'keras.engine'エラーが出る。
     # 利用する場合はインストールしなおしか、vmを切り替える
-    # pip unistall transformers
+    # pip uninstall transformers
     # pip install transformers
     "rinna": {
         "framework": "tensorflow",
