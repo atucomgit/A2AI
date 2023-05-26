@@ -1,153 +1,236 @@
-# 参考：https://note.com/npaka/n/n932b4c0a2230
-import os
-import argparse
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
-import torch
-import torch.nn as nn
-import bitsandbytes as bnb
-from transformers import AutoTokenizer, AutoConfig, AutoModelForCausalLM, BitsAndBytesConfig
-from peft import LoraConfig, get_peft_model 
-import transformers
+# 基本パラメータ
+model_name = "cyberagent/open-calm-medium"
+dataset = "kunishou/databricks-dolly-15k-ja"
+peft_name = "lora-calm-medium"
+output_dir = "finetuned-LoRA"
+
+from transformers import AutoTokenizer
+
+# トークナイザーの準備
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+CUTOFF_LEN = 256  # 最大長
+
+# トークナイズ関数の定義
+def tokenize(prompt, tokenizer):
+    result = tokenizer(
+        prompt+"<|endoftext|>",
+        truncation=True,
+        max_length=CUTOFF_LEN,
+        padding=False,
+    )
+    return {
+        "input_ids": result["input_ids"],
+        "attention_mask": result["attention_mask"],
+    }
+
+# プロンプトテンプレートの準備
+def generate_prompt(data_point):
+    if data_point["input"]:
+        return f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+### Instruction:
+{data_point["instruction"]}
+
+### Input:
+{data_point["input"]}
+
+### Response:
+{data_point["output"]}"""
+    else:
+        return f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
+
+### Instruction:
+{data_point["instruction"]}
+
+### Response:
+{data_point["output"]}"""
+
 from datasets import load_dataset
-from accelerate import Accelerator
-accelerator = Accelerator()
 
-BASE_MODEL = "cyberagent/open-calm-7b"
-LoRATUNED_MODEL_PATH = "./finetuned-LoRA/practice"
-# DATA_SETS = "Abirate/english_quotes"
-DATA_SETS = "kunishou/databricks-dolly-15k-ja"
+# データセットの準備
+data = load_dataset(dataset)
 
-def download_model():
-    """モデルの読み込み"""
-    print(f"**** Modelをダウンロード: {BASE_MODEL}")
+VAL_SET_SIZE = 2000
 
-    # 8bitモデルとしてダウンロード
-    # Macだとllm_int8_enable_fp32_cpu_offloadの設定が必要で、その際は、offload_folderの設定（出力先なので任意のdirでOK）も必要
-    model = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL, 
-        device_map="auto",
-        # llm_int8_enable_fp32_cpu_offload=True,
-        offload_folder="offload"
-    )
+# 学習データと検証データの準備
+train_val = data["train"].train_test_split(
+    test_size=VAL_SET_SIZE, shuffle=True, seed=42
+)
+train_data = train_val["train"]
+val_data = train_val["test"]
+train_data = train_data.shuffle().map(lambda x: tokenize(generate_prompt(x), tokenizer))
+val_data = val_data.shuffle().map(lambda x: tokenize(generate_prompt(x), tokenizer))
 
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 
-    # #
-    # # 8bitモデルに後処理を適用
-    # # 
-    # print("**** 8bitモデルに後処理を適用.")
-    # for param in model.parameters():
-    #     param.requires_grad = False  # モデルをフリーズ
-    #     if param.ndim == 1:
-    #         # 安定のためにレイヤーノルムをfp32にキャスト
-    #         param.data = param.data.to(torch.float32)
+from transformers import AutoModelForCausalLM
 
-    # model.gradient_checkpointing_enable()
-    # model.enable_input_require_grads()
+# モデルの準備
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    # load_in_8bit=True,  # Macだとこれ無理
+    device_map="auto",
+    llm_int8_enable_fp32_cpu_offload=True,  # Macだとこれ必要
+    offload_folder="offload"  # Macだとこれ必要
+)
 
-    # class CastOutputToFloat(nn.Sequential):
-    #     def forward(self, x): return super().forward(x).to(torch.float32)
-    # model.lm_head = CastOutputToFloat(model.lm_head)
+from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, TaskType
 
-    return model, tokenizer
+# LoRAのパラメータ
+lora_config = LoraConfig(
+    r= 8, 
+    lora_alpha=16,
+    target_modules=["query_key_value"],
+    lora_dropout=0.05,
+    bias="none",
+    task_type=TaskType.CAUSAL_LM
+)
 
-#
-# PeftModelを読み込む
-#
-def train_by_rola(model, tokenizer):
-    """LoRAでトレーニング"""
-    print("**** LoRAでトレーニング開始.")
-    print(model.config.vocab_size)
-    config = LoraConfig(
-        r=16,
-        lora_alpha=32,
-        # target_modules=["q_proj", "v_proj"],
-        lora_dropout=0.05,
-        bias="none",
-        task_type="CAUSAL_LM"
-    )
+# モデルの前処理
+model = prepare_model_for_int8_training(model)
 
-    model = get_peft_model(model, config)
-    model.print_trainable_parameters()
+# LoRAモデルの準備
+model = get_peft_model(model, lora_config)
 
-    #
-    # 学習の実行
-    # 以下は、偉人の名言集のサンプル。
-    # その他、データセットは以下のサイトでよくまとまっている。
-    # https://note.com/npaka/n/n686d987adfb1
-    # ・databricks-dolly-15k-jaなんかが日本語で使えるかも
-    # data = load_dataset(DATA_SETS)
-    data = load_dataset("./data_sets/language-modeling/")
-    print("=================")
-    print(data)
-    print("=================")
-    data = data.filter(lambda example: len(example['text']) > 0)  # 空白だと落ちる
-    data = data.filter(lambda example: len(example['text']) < 256)  # 大きい入力だとembedで落ちる
-    data = data.map(lambda samples: tokenizer(samples['text']), batched=True)
+# 学習可能パラメータの確認
+model.print_trainable_parameters()
 
-    trainer = transformers.Trainer(
-        model=model, 
-        train_dataset=data['train'],
-        args=transformers.TrainingArguments(
-            per_device_train_batch_size=4, 
-            gradient_accumulation_steps=4,
-            warmup_steps=100, 
-            max_steps=200, 
-            optim="adamw_torch",
-            learning_rate=2e-4, 
-            # fp16=True,
-            logging_steps=1, 
-            output_dir=LoRATUNED_MODEL_PATH,
-            # use_mps_device=True
-        ),
-        data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False)
-    )
-    
-    model.config.use_cache = False  # 警告を黙らせます。 推論のために再度有効にしてください。
-    trainer.train()
-    model.config.use_cache = True
+import transformers
+max_steps = 200    # GPUで時間がある場合はこれを除外するとたくさん訓練する、
+eval_steps = 200
+save_steps = 200
+logging_steps = 20
 
-    trainer.model.save_pretrained(LoRATUNED_MODEL_PATH)
-    print("**** トレーニング完了.")
+# トレーナーの準備
+trainer = transformers.Trainer(
+    model=model,
+    train_dataset=train_data,
+    eval_dataset=val_data,
+    args=transformers.TrainingArguments(
+        num_train_epochs=3,
+        learning_rate=3e-4,
+        logging_steps=logging_steps,
+        evaluation_strategy="steps",
+        save_strategy="steps",
+        eval_steps=eval_steps,
+        save_steps=save_steps,
+        max_steps=max_steps, 
+        optim="adamw_torch",
+        output_dir=output_dir,
+        report_to="none",
+        save_total_limit=3,
+        push_to_hub=False,
+        auto_find_batch_size=True
+    ),
+    data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
+)
+
+# 学習の実行
+model.config.use_cache = False
+trainer.train() 
+model.config.use_cache = True
+
+# LoRAモデルの保存
+trainer.model.save_pretrained(peft_name)
+
+# トークナイズの動作確認
+# input_idsの最後にEOS「0」が追加されてることを確認
+print(tokenize("hi there", tokenizer))
+
+# データセットの確認
+print(data["train"][5])
+
+# プロンプトテンプレートの確認
+print(generate_prompt(data["train"][5]))
 
 def run(prompt):
-    """推論の実行"""
-    model_path = LoRATUNED_MODEL_PATH
-    # model = AutoModelForCausalLM.from_pretrained(model_path, from_tf=True)
-    # tokenizer = AutoTokenizer.from_pretrained(model_path)
+    import torch
+    from peft import PeftModel, PeftConfig
+    from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    # batch = tokenizer(prompt, return_tensors='pt')
+    # モデルの準備
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        load_in_8bit=True,
+        device_map="auto",
+    )
 
-    # with torch.cuda.amp.autocast():
-    #     output_tokens = model.generate(**batch, max_new_tokens=50)
+    # トークンナイザーの準備
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    # print('\n\n', tokenizer.decode(output_tokens[0], skip_special_tokens=True))
+    # LoRAモデルの準備
+    model = PeftModel.from_pretrained(
+        model, 
+        peft_name, 
+        device_map="auto"
+    )
 
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-    # fine_tuned_model = AutoModelForCausalLM.from_pretrained(LoRATUNED_MODEL_PATH, from_tf=True)
-    fine_tuned_model = AutoModelForCausalLM.from_pretrained(LoRATUNED_MODEL_PATH)
+    # 評価モード
+    model.eval()
 
-    input = tokenizer.encode(prompt, return_tensors="pt")
-    output = fine_tuned_model.generate(input, do_sample=True, max_length=300, num_return_sequences=1)
-    decoded_output = tokenizer.batch_decode(output, skip_special_tokens=True)
-    result_text = '\n'.join(decoded_output)
-    result_text = result_text.replace(" ", "")
-    print(result_text)
+    # プロンプトテンプレートの準備
+    def generate_prompt(data_point):
+        if data_point["input"]:
+            return f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+            ### Instruction:
+            {data_point["instruction"]}
+
+            ### Input:
+            {data_point["input"]}
+
+            ### Response:"""
+        else:
+            return f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
+
+            ### Instruction:
+            {data_point["instruction"]}
+
+            ### Response:"""
+    
+    # テキスト生成関数の定義
+    def generate(instruction,input=None,maxTokens=256):
+        # 推論
+        prompt = generate_prompt({'instruction':instruction,'input':input})
+        input_ids = tokenizer(prompt, return_tensors="pt", truncation=True).input_ids.cuda()
+        outputs = model.generate(
+            input_ids=input_ids, 
+            max_new_tokens=maxTokens, 
+            do_sample=True,
+            temperature=0.7, 
+            top_p=0.75, 
+            top_k=40,         
+            no_repeat_ngram_size=2,
+        )
+        outputs = outputs[0].tolist()
+
+        # EOSトークンにヒットしたらデコード完了
+        if tokenizer.eos_token_id in outputs:
+            eos_index = outputs.index(tokenizer.eos_token_id)
+            decoded = tokenizer.decode(outputs[:eos_index])
+
+            # レスポンス内容のみ抽出
+            sentinel = "### Response:"
+            sentinelLoc = decoded.find(sentinel)
+            if sentinelLoc >= 0:
+                print(decoded[sentinelLoc+len(sentinel):])
+            else:
+                print('Warning: Expected prompt template to be emitted.  Ignoring output.')
+        else:
+            print('Warning: no <eos> detected ignoring output')
+
+    generate(prompt)
 
 if __name__ == "__main__":
     # 引数のパーサを作成
+    import argparse
     parser = argparse.ArgumentParser(description='Train or run a fine-tuned GPT-2 model.')
-    parser.add_argument('-d', '--download_model', action='store_true', help='download the model. ')
     parser.add_argument('-t', '--train', action='store_true', help='train the model by LoRA.')
     parser.add_argument('-r', '--run', action='store_true', help='Run the model.')
     args = parser.parse_args()
 
-    if args.train:
-        model, tokenizer = download_model()
-        train_by_rola(model, tokenizer)
-    elif args.run:
+    if args.run:
         prompt = input("プロンプト：")
         if not prompt:
-            prompt = "Two things are infinite: "
+            prompt = "まどか☆マギカで一番かわいいのは？"
         run(prompt)
-        

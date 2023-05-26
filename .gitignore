@@ -6,6 +6,7 @@
 
 app/deeplearning/llm/cached*
 app/deeplearning/llm/runs/*
+app/deeplearning/llm/*/runs/*
 app/deeplearning/*/data_sets/*.txt
 app/deeplearning/*/data_sets/*.json
 app/deeplearning/*/data_sets/*.jsonl
