@@ -95,6 +95,7 @@ def train():
     )
 
     # LoRAのパラメータ
+    # target_modules: https://github.com/huggingface/peft/blob/main/src/peft/utils/other.py#L202
     lora_config = LoraConfig(
         r= 8, 
         lora_alpha=16,
