@@ -1,18 +1,15 @@
-from transformers import AutoTokenizer
+import argparse
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoConfig
-from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, TaskType
+from peft import LoraConfig, get_peft_model, prepare_model_for_int8_training, TaskType, PeftModel
 import transformers
-
-from peft import PeftModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import argparse
 
 # 基本パラメータ
 BASE_MODEL = "cyberagent/open-calm-medium"  # LoRAのベースとなるモデル
 DATA_SET = "kunishou/databricks-dolly-15k-ja"  # LoRAに学習させたいデータセット
 PEFT_MODEL = "finetuned/lora-calm-medium"  # LoRAしたモデルの出力先
-output_dir = "tmp_finetuned-LoRA"  # ここに出力されるものは、トレーニング完了後に削除してしまってOK
+output_dir = "tmp_finetuned-LoRA"  # ここに出力されるものは、トレーニング完了後に削除してしまってOKなので、自動で消しています
 
 def train():
     # 
@@ -117,8 +114,8 @@ def train():
     #
     # 4. トレーニング
     #
-    epochs = 1
-    max_steps = 200
+    epochs = 3
+    max_steps = 1000
     eval_steps = 200
     save_steps = 200
     logging_steps = 20
