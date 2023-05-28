@@ -11,10 +11,13 @@ MODELS = {
         "base_model": "rinna/japanese-gpt-neox-3.6b-instruction-sft",
         "output_dir": "finetuned/rinna-instruct/"
     },
-    # トレーニングする場合は、tramsformersは"4.29.2"が必要。No module named 'keras.engine'エラーが出る。
+    # トレーニングする場合は、tramsformersは"4.29.2"が必要。
     # 利用する場合はインストールしなおしか、vmを切り替える
     # pip uninstall transformers
     # pip install transformers
+    # それでも、No module named 'keras.engine'エラーが出る場合は、kerasも再インストール
+    # pip uninstall keras
+    # pip install keras
     "rinna": {
         "framework": "tensorflow",
         "base_model": "rinna/japanese-gpt2-medium",
@@ -54,18 +57,17 @@ MODELS = {
 EPOCHS = 1
 
 # 利用するモデルの切り替え
-# model_type = "rinna"
+model_type = "rinna"
 # model_type = "rinna-instruct"
-model_type = "tokodai"
+# model_type = "tokodai"
 # model_type = "waseda"
 framework = MODELS[model_type]["framework"]
 base_model = MODELS[model_type]["base_model"]
 output_dir = MODELS[model_type]["output_dir"]
 
 def finetune_and_save_model(path_to_dataset):
-    # TODO 以下、ターミナルで実行しないとうまくいかない
-    setenv = "export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python"
-    os.system(setenv)
+    # 以下、環境変数が必要なので設定。他に影響が出ないように現在のコンソールのみに適用
+    os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
     print("---- トレーニング開始 ----")
     print(f"データ：{path_to_dataset}")
