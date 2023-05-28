@@ -73,6 +73,7 @@ def finetune_and_save_model(path_to_dataset):
 
     # Pytorchタイプのモデルで、Apple Silliconを利用する場合、use_mps_device引数を与えるとGPUを利用してくれる
     # 詳細は、transformers/src/training_args.pyに書いてある。
+    # ちなみに、peft_llm.pyにパイソンのコード版でのトレーニングを記載したので、後ほど差し替えて、transformersのgit-cloneは不要にしていきましょうかね・・・
     command = f'python ../../../../transformers/examples/{framework}/language-modeling/run_clm.py ' \
         f'--model_name_or_path={base_model} ' \
         f'--train_file={path_to_dataset} ' \

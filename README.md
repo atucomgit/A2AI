@@ -228,6 +228,8 @@ git clone https://github.com/tak6uch1/cuda-tensorflow.git
 
 「環境設定コマンド.txt」にも記載していますが、以下の環境変数設定も必要です。
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+ちなみに、peft_llm.pyにパイソンのコード版でのトレーニングを記載したので、後ほど差し替えて、transformersのgit-cloneは不要にする予定。
 ```
 
 ### peft_llm.py
