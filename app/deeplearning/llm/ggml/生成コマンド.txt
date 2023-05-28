@@ -1,0 +1,26 @@
+・ggml化
+python ../../../../../ggml/examples/gpt-neox/convert-h5-to-ggml.py ../finetuned/rinna-instruct 1
+python ../../../../../ggml/examples/gpt-neox/convert-h5-to-ggml.py ../finetuned/base_and_lora_merged/open-calm-medium 1
+
+・実行
+../../../../../ggml/build/bin/gpt-neox -m ../finetuned/rinna-instruct/ggml-model-f16.bin -p オッス！
+../../../../../ggml/build/bin/gpt-neox -m ../finetuned/base_and_lora_merged/open-calm-medium/ggml-model-f16.bin -p マド カマギカで一番可愛いのは？
+
+・量子化
+../../../../../ggml/build/bin/gpt-neox-quantize ../finetuned/rinna-instruct/ggml-model-f16.bin ../finetuned/rinna-instruct/ggml-model-f16_q4_0.bin 2
+
+
+## 本家サイトの量子化の説明は以下の通り。（ggml/examples/gpt-2/README.md）
+# 最後の引数、2, 3とかで量子化のクオリティを選択できる。
+# ちなみに、量子化のバイナリを作る方法がREADMEに書いてないので、以下の通り。
+# cd ggml/build
+# make gpt-2-quantize
+# make gpt-neox-quantize
+
+# quantize GPT-2 F16 to Q4_0 (faster but less precise)
+./bin/gpt-2-quantize models/gpt-2-1558M/ggml-model-f16.bin models/gpt-2-1558M/ggml-model-q4_0.bin 2
+./bin/gpt-2 -m models/gpt-2-1558M/ggml-model-q4_0.bin -p "This is an example"
+
+# quantize Cerebras F16 to Q4_1 (slower but more precise)
+./bin/gpt-2-quantize models/Cerebras-GPT-6.7B/ggml-model-f16.bin models/Cerebras-GPT-6.7B/ggml-model-q4_1.bin 3
+./bin/gpt-2 -m models/Cerebras-GPT-6.7B/ggml-model-q4_1.bin -p "This is an example"

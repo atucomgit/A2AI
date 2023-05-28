@@ -270,3 +270,28 @@ LoRAする上で、AppleSillicon(M1/M2)を使わせるためには、device_map�
         device_map="auto"   # device_map指定するとMacだと落ちる
     )
 ```
+
+### finetune_utils.py
+- 二つのモデルを一つにマージする際に必要となる機能を提供します
+- LoRAしたモデルと元となったモデルを結合したりするのに使えます
+
+### 起動方法
+```
+cd app/deeplearning/llm 
+python finetune_utils.py -引数
+```
+
+### 代表的な引数
+| コマンド   | 説明                                                         |
+|------------|--------------------------------------------------------------|
+| -ss         | モデルを.safetensors形式に変換します。ファイルはsafetensorsディレクトリに格納されます                     |
+| -ls         | .savetensors形式のモデルを元のモデル（.bin, .h5）に戻します                              |
+
+### モデルをマージする方法
+- まずはAutomatic1111をインストールしてください。[Macでのインストール方法](https://gift-by-gifted.com/stablediffusion-3/)
+- マージしたいモデルの.safetensorsファイルを用意します。コレはfinetune_utils.py -ssで作成できます
+- 作成した.safetensorsファイルを、stable-diffusion-webui/models/Stable-diffusionディレクトリに格納
+- Automatic1111を利用してモデルをマージします。[マージ方法](https://kurokumasoft.com/2023/04/01/howto-make-merge-models/)
+- マージして作成された.safetensorsファイルをfinetune_utils.py -lsにてmodelに戻します。参照先ディレクトリは、ソースを直接修正してください
+- ggml化、量子化する場合はまず、ggmlツールをインストールしてください。git clone https://github.com/ggerganov/ggml.git
+- コマンドは、A2AI/app/deeplearning/llm/ggml/生成コマンド.txtに記載してあります。利用するモデルのベース（gpt-2, gpt-neoxなど）ごとにスクリプトが違うので注意です。
