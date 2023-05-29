@@ -115,6 +115,15 @@ def train():
     #
     # 4. トレーニング
     #
+
+    # ログのクレンジング
+    is_delete_log = input("前回処理で残っているログを削除しますか？(y/n): ")
+    if is_delete_log.upper() == "Y":
+        shutil.rmtree("./log", ignore_errors=True)
+        print("ログを削除しました")
+    else:
+        print("ログ削除はキャンセルされました")
+
     epochs = 3
     max_steps = 200
     eval_steps = 200

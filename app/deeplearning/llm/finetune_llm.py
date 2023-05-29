@@ -1,6 +1,9 @@
 import os
 import argparse
+import shutil
 import torch
+from datasets import load_dataset
+import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # 以下、頭良い順に並べる
@@ -55,7 +58,7 @@ MODELS = {
 """
 
 # 学習量の定義
-EPOCHS = 1
+EPOCHS = 3
 
 # 利用するモデルの切り替え
 model_type = "rinna"
@@ -65,8 +68,115 @@ model_type = "rinna"
 framework = MODELS[model_type]["framework"]
 base_model = MODELS[model_type]["base_model"]
 output_dir = MODELS[model_type]["output_dir"]
+tmp_out_dir = "tmp_finetuned" 
 
-def finetune_and_save_model(path_to_dataset):
+def train(path_to_dataset):
+
+    print("---- トレーニング開始 ----")
+    print(f"データ：{path_to_dataset}")
+    print(f"Model：{model_type}")
+
+    # 
+    # 1. トークナイザーの準備
+    #
+    tokenizer = AutoTokenizer.from_pretrained(base_model)
+
+    # トークナイズ関数の定義
+    CUTOFF_LEN = 256  # 最大長
+    def tokenize(prompt, tokenizer):
+        result = tokenizer(
+            prompt+"<|endoftext|>",
+            truncation=True,
+            max_length=CUTOFF_LEN,
+            padding=False,
+        )
+        return {
+            "input_ids": result["input_ids"],
+            "attention_mask": result["attention_mask"],
+        }
+
+    # トークナイズの動作確認：input_idsの最後にEOS「0」が追加されてることを確認
+    print(tokenize("hi there", tokenizer))
+
+    # プロンプトテンプレートの準備
+    def generate_prompt(data_point):
+        return data_point["text"]
+
+    #
+    # 2. データセットの準備
+    data = load_dataset(path_to_dataset)
+
+    # データセットの確認
+    print(data)
+    print(data["train"][6])
+
+    # プロンプトテンプレートの確認
+    print(generate_prompt(data["train"][6]))
+
+    # 学習データと検証データの準備
+    VAL_SET_SIZE = 100
+
+    train_val = data["train"].train_test_split(
+        test_size=VAL_SET_SIZE, shuffle=True, seed=42
+    )
+    train_data = train_val["train"]
+    val_data = train_val["test"]
+    train_data = train_data.shuffle().map(lambda x: tokenize(generate_prompt(x), tokenizer))
+    val_data = val_data.shuffle().map(lambda x: tokenize(generate_prompt(x), tokenizer))
+
+    #
+    # 3. モデルの準備
+    #
+    model = AutoModelForCausalLM.from_pretrained(base_model)
+
+    #
+    # 4. トレーニング
+    #
+
+    # ログのクレンジング
+    is_delete_log = input("前回処理で残っているログを削除しますか？(y/n): ")
+    if is_delete_log.upper() == "Y":
+        shutil.rmtree("./log", ignore_errors=True)
+        print("ログを削除しました")
+    else:
+        print("ログ削除はキャンセルされました")
+
+    # トレーナーの準備
+    trainer = transformers.Trainer(
+        model=model,
+        train_dataset=train_data,
+        eval_dataset=val_data,
+        args=transformers.TrainingArguments(
+            num_train_epochs=EPOCHS,
+            learning_rate=3e-4,
+            logging_steps=1,
+            logging_dir="./log",
+            evaluation_strategy="epoch",
+            save_strategy="epoch",
+            # max_steps=200, 
+            optim="adamw_torch",
+            output_dir=tmp_out_dir,
+            report_to="tensorboard",
+            save_total_limit=3,
+            push_to_hub=False,
+            auto_find_batch_size=True,
+            use_mps_device=True  # Macの場合、この引数を足すとGPUを利用してくれる
+        ),
+        data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
+    )
+
+    # 学習の実行
+    model.config.use_cache = False  # 警告を黙らせる
+    trainer.train() 
+    model.config.use_cache = True
+
+    # LoRAモデルの保存
+    trainer.model.save_pretrained(output_dir)
+
+    # 不要なディレクトリの削除
+    shutil.rmtree(tmp_out_dir)
+
+def question_train(path_to_dataset):
     # 以下、環境変数が必要なので設定。他に影響が出ないように現在のコンソールのみに適用
     os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 
@@ -74,28 +184,6 @@ def finetune_and_save_model(path_to_dataset):
     print(f"データ：{path_to_dataset}")
     print(f"Model：{model_type}")
 
-    # Pytorchタイプのモデルで、Apple Silliconを利用する場合、use_mps_device引数を与えるとGPUを利用してくれる
-    # 詳細は、transformers/src/training_args.pyに書いてある。
-    # ちなみに、peft_llm.pyにパイソンのコード版でのトレーニングを記載したので、後ほど差し替えて、transformersのgit-cloneは不要にしていきましょうかね・・・
-    command = f'python ../../../../transformers/examples/{framework}/language-modeling/run_clm.py ' \
-        f'--model_name_or_path={base_model} ' \
-        f'--train_file={path_to_dataset} ' \
-        f'--validation_file={path_to_dataset} ' \
-        '--do_train ' \
-        '--do_eval ' \
-        f'--num_train_epochs={EPOCHS} ' \
-        '--save_strategy=steps ' \
-        '--save_total_limit=3 ' \
-        '--per_device_train_batch_size=1 ' \
-        '--per_device_eval_batch_size=1 ' \
-        f'--output_dir={output_dir} ' \
-        "--overwrite_output_dir " \
-        "--log_level=info " \
-        "--logging_steps=1 " \
-        "--logging_dir=./log " \
-        "--report_to=tensorboard " \
-        "--use_mps_device=True "
-    
     # お試し実装。Q&A対応モデルになるようにファインチューニングする場合
     # 参考）
     # https://note.com/npaka/n/na8721fdc3e24
@@ -106,7 +194,7 @@ def finetune_and_save_model(path_to_dataset):
     # 　↓
     # device = torch.device("mps")
     # （ただし！ファインチューニング後のモデルが350GBになってしまうので、何かがおかしい気がする・・・）
-    qa_command = "python ../../../../transformers/examples/legacy/question-answering/run_squad.py " \
+    command = "python ../../../../transformers/examples/legacy/question-answering/run_squad.py " \
         "--model_type=bert " \
         f"--model_name_or_path=colorfulscoop/bert-base-ja " \
         f'--output_dir=./finetuned/qa-test' \
@@ -125,7 +213,7 @@ def finetune_and_save_model(path_to_dataset):
     # 悩み1) QAデータをどういうふうに食わせれば良いか不明。train_fileを指定すると落ちる。
     # 悩み2) 最新のkerasだと遅くなる警告が出る・・・（macでやるにはしんどいか・・・）→(解決！)use_mps_device引数でGPU使ってくれる。でも元データのsquadが大きいので、超遅い。
     # 悩み3）trainデータをsquad形式のjsonを用意してdataset_nameに配置しても、なぜか落ちる。データ形式が違うと言われてしまう。
-    # qa_command = "python ../../../../transformers/examples/tensorflow/question-answering/run_qa.py " \
+    # command = "python ../../../../transformers/examples/tensorflow/question-answering/run_qa.py " \
     #     f"--model_name_or_path=colorfulscoop/bert-base-ja " \
     #     f'--output_dir=./finetuned/qa ' \
     #     "--dataset_name=squad " \
@@ -283,9 +371,9 @@ if __name__ == "__main__":
             if model_type == "rinna-instruct":
                 print("すごい時間がかかりますが本当に学習しますか？学習する場合は、この部分の分岐をソース修正してください")
             else:
-                finetune_and_save_model('./data_sets/language-modeling/mujunss_mail.txt')
+                train('./data_sets/language-modeling/')
         elif args.question_train:
-            finetune_and_save_model('./data_sets/question-answering/qa_data.json')             
+            question_train('./data_sets/question-answering/qa_data.json')             
         elif args.run:
             prompt = input("文章生成を行う冒頭の文を与えてください：")
             if prompt:
