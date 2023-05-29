@@ -12,6 +12,7 @@ MODELS = {
         "output_dir": "finetuned/rinna-instruct/"
     },
     # トレーニングする場合は、tramsformersは"4.29.2"が必要。
+    # バージョンが高いとNo module named 'keras.__internal__'エラーが出る。
     # 利用する場合はインストールしなおしか、vmを切り替える
     # pip uninstall transformers
     # pip install transformers
@@ -83,12 +84,16 @@ def finetune_and_save_model(path_to_dataset):
         '--do_train ' \
         '--do_eval ' \
         f'--num_train_epochs={EPOCHS} ' \
-        '--save_steps=5000 ' \
+        '--save_strategy=steps ' \
         '--save_total_limit=3 ' \
         '--per_device_train_batch_size=1 ' \
         '--per_device_eval_batch_size=1 ' \
         f'--output_dir={output_dir} ' \
         "--overwrite_output_dir " \
+        "--log_level=info " \
+        "--logging_steps=1 " \
+        "--logging_dir=./log " \
+        "--report_to=tensorboard " \
         "--use_mps_device=True "
     
     # お試し実装。Q&A対応モデルになるようにファインチューニングする場合

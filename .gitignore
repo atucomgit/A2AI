@@ -5,6 +5,7 @@
 .DS_Store
 
 app/deeplearning/llm/cached*
+app/deeplearning/llm/log/*
 app/deeplearning/llm/runs/*
 app/deeplearning/llm/*/runs/*
 app/deeplearning/llm/safetensors/*

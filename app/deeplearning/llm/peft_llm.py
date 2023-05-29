@@ -1,4 +1,5 @@
 import argparse
+import shutil
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoConfig
@@ -115,10 +116,10 @@ def train():
     # 4. トレーニング
     #
     epochs = 3
-    max_steps = 1000
+    max_steps = 200
     eval_steps = 200
     save_steps = 200
-    logging_steps = 20
+    logging_steps = 1
 
     # トレーナーの準備
     trainer = transformers.Trainer(
@@ -129,6 +130,7 @@ def train():
             num_train_epochs=epochs,
             learning_rate=3e-4,
             logging_steps=logging_steps,
+            logging_dir="./log",
             evaluation_strategy="steps",
             save_strategy="steps",
             eval_steps=eval_steps,
@@ -136,7 +138,7 @@ def train():
             max_steps=max_steps, 
             optim="adamw_torch",
             output_dir=output_dir,
-            report_to="none",
+            report_to="tensorboard",
             save_total_limit=3,
             push_to_hub=False,
             auto_find_batch_size=True,
@@ -154,7 +156,6 @@ def train():
     trainer.model.save_pretrained(PEFT_MODEL)
 
     # 不要なディレクトリの削除
-    import shutil
     shutil.rmtree(output_dir)
 
 def run(prompt):

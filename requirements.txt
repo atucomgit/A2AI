@@ -11,6 +11,7 @@ pytest
 accelerate
 tensorflow
 tensorflow_datasets
+tensorboard
 bitsandbytes
 loralib
 

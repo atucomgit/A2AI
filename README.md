@@ -297,3 +297,17 @@ python finetune_utils.py -引数
 - マージして作成された.safetensorsファイルをfinetune_utils.py -lsにてmodelに戻します。参照先ディレクトリは、ソースを直接修正してください
 - ggml化、量子化する場合はまず、ggmlツールをインストールしてください。git clone https://github.com/ggerganov/ggml.git
 - コマンドは、A2AI/app/deeplearning/llm/ggml/生成コマンド.txtに記載してあります。利用するモデルのベース（gpt-2, gpt-neoxなど）ごとにスクリプトが違うので注意です。
+
+### 学習の評価
+- tensorboardを利用します。
+- 学習は行うとlogディレクトリにログを出力しているので、それをtensorboardに食わせるとグラフで確認することができます。
+
+```
+# 起動コマンド
+tensorboard --logdir ./log
+http://localhost:6006/
+```
+
+### 注意事項
+- peft_llm.pyではうまくログが出力されます
+- finetune_llm.pyはログが出ないので、後ほど直します。
