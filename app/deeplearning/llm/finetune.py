@@ -6,16 +6,18 @@ from transformers import AutoModelForCausalLM, AutoConfig
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType, PeftModel
 import transformers
 import utils_for_tuning
+from training_prompt_generator import TrainingPromptGenerator
 
 # トレーニングする対象のモデル
-BASE_MODEL = "rinna/japanese-gpt2-medium"  # huggingFaceで検索できるモデル名（ローカルのファイルを指定してもOK）
+BASE_MODEL = "rinna/japanese-gpt2-medium"      # huggingFaceで検索できるモデル名（ローカルのファイルを指定してもOK）
 DATA_SET = "kunishou/databricks-dolly-15k-ja"  # 学習させたいデータセット（ローカルのファイルを指定してもOK）
+DATA_SET_TYPE = TrainingPromptGenerator.DATA_TYPE_INSTRUCT  # DataSetの形式に合致するデータタイプ。詳しくはTrainingPromptGenerator参照。
 
 # トレーニング用のハイパーパラメータ
-EPOCHS = 1           # トレーニング反復回数
-LEARNING_RATE=3e-4   # 学習レート
-MAX_STEPS = 10       # 学習最大ステップ数（上限を設定したい場合に設定する）
-LOGGING_STEPS = 1    # ログを保存する単位。小さい数字にすると、TensorBoardから細かくデータが見える
+EPOCHS = 1            # トレーニング反復回数
+LEARNING_RATE=3e-4    # 学習レート
+MAX_STEPS = 200       # 学習最大ステップ数（上限を設定したい場合に設定する）
+LOGGING_STEPS = 1     # ログを保存する単位。小さい数字にすると、TensorBoardから細かくデータが見える
 
 # 以下は個別に定義する必要なし（あとでどこかに隠す）
 FINETUNED_MODEL = "finetuned/" + "-".join(BASE_MODEL.split("/"))
@@ -32,6 +34,9 @@ def train(is_lora):
     # トークナイズ関数の定義
     CUTOFF_LEN = 256  # 最大長
     def tokenize(prompt, tokenizer):
+        if prompt is None:
+            prompt = ""
+
         result = tokenizer(
             prompt+"<|endoftext|>",
             truncation=True,
@@ -48,25 +53,7 @@ def train(is_lora):
 
     # プロンプトテンプレートの準備
     def generate_prompt(data_point):
-        if data_point["input"]:
-            return f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
-
-            ### Instruction:
-            {data_point["instruction"]}
-
-            ### Input:
-            {data_point["input"]}
-
-            ### Response:
-            {data_point["output"]}"""
-        else:
-            return f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
-
-            ### Instruction:
-            {data_point["instruction"]}
-
-            ### Response:
-            {data_point["output"]}"""
+        return TrainingPromptGenerator.get_training_data(data_point, DATA_SET_TYPE)
 
     #
     # 2. データセットの準備
@@ -76,13 +63,17 @@ def train(is_lora):
     data = load_dataset(DATA_SET)
 
     # データセットの確認
+    print("データセットの確認")
     print(data["train"][0])
 
     # プロンプトテンプレートの確認
+    print("プロンプトテンプレートの確認")
     print(generate_prompt(data["train"][0]))
 
     # 学習データと検証データの準備
-    VAL_SET_SIZE = 2000
+    data_size = len(data["train"])
+    VAL_SET_RATIO = 0.3  # 検証データの割合
+    VAL_SET_SIZE = int(data_size * VAL_SET_RATIO)
 
     train_val = data["train"].train_test_split(
         test_size=VAL_SET_SIZE, shuffle=True, seed=42
@@ -194,6 +185,7 @@ def run(prompt, is_fine_tuned, is_lora, is_merged):
     # トークナイザーの準備
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 
+    # 引数によってロードするモデルを切り替える
     if is_fine_tuned:
         print("------------------------------------------")
         print(f"TargetModel: {FINETUNED_MODEL}")
@@ -243,29 +235,13 @@ def run(prompt, is_fine_tuned, is_lora, is_merged):
     model.eval()
 
     # プロンプトテンプレートの準備
-    def generate_prompt(data_point):
-        if data_point["input"]:
-            return f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
-
-            ### Instruction:
-            {data_point["instruction"]}
-
-            ### Input:
-            {data_point["input"]}
-
-            ### Response:"""
-        else:
-            return f"""Below is an instruction that describes a task. Write a response that appropriately completes the request.
-
-            ### Instruction:
-            {data_point["instruction"]}
-
-            ### Response:"""
+    def generate_prompt(prompt):
+        return TrainingPromptGenerator.get_prompt(prompt, DATA_SET_TYPE)
     
     # テキスト生成関数の定義
-    def generate(instruction, input=None, maxTokens=256):
+    def generate(prompt, sub_prompt=None, maxTokens=256):
         # 推論
-        prompt = generate_prompt({'instruction':instruction,'input':input})
+        prompt = generate_prompt({'prompt':prompt,'sub_prompt':sub_prompt})
         input_ids = tokenizer(prompt, return_tensors="pt", truncation=False).input_ids  # Macでは、ラストの.cuda()は削除
 
         outputs = model.generate(
@@ -278,7 +254,6 @@ def run(prompt, is_fine_tuned, is_lora, is_merged):
             no_repeat_ngram_size=2,
         )
         outputs = outputs[0].tolist()
-        print(f"DEBUG: {tokenizer.decode(outputs)}")
 
         # EOSトークンにヒットしたらデコード完了
         if tokenizer.eos_token_id in outputs:
@@ -292,9 +267,13 @@ def run(prompt, is_fine_tuned, is_lora, is_merged):
                 print("AIの回答：")
                 print(decoded[sentinelLoc+len(sentinel):])
             else:
-                print('Warning: Expected prompt template to be emitted.  Ignoring output.')
+                print('Warning: Expected prompt template to be emitted.')
+                print("AIの回答：")
+                print(decoded)
         else:
             print('Warning: no <eos> detected ignoring output')
+            print("AIの回答：")
+            print({tokenizer.decode(outputs)})
 
     generate(prompt)
 
