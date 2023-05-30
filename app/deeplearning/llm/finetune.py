@@ -11,7 +11,7 @@ from training_prompt_generator import TrainingPromptGenerator
 # トレーニングする対象のモデル
 BASE_MODEL = "rinna/japanese-gpt2-medium"      # huggingFaceで検索できるモデル名（ローカルのファイルを指定してもOK）
 DATA_SET = "kunishou/databricks-dolly-15k-ja"  # 学習させたいデータセット（ローカルのファイルを指定してもOK）
-DATA_SET_TYPE = TrainingPromptGenerator.DATA_TYPE_INSTRUCT  # DataSetの形式に合致するデータタイプ。詳しくはTrainingPromptGenerator参照。
+DATA_SET_TYPE = TrainingPromptGenerator.DATA_TYPE_INSTRUCT_CHAT  # DataSetの形式に合致するデータタイプ。詳しくはTrainingPromptGenerator参照。
 
 # トレーニング用のハイパーパラメータ
 EPOCHS = 1            # トレーニング反復回数

@@ -1,6 +1,10 @@
+# TODO 恐らくChat系の教師データは、モデルに合わせた形式にする必要があると思われる
 class TrainingPromptGenerator:
 
-    DATA_TYPE_INSTRUCT = "instruct"
+    """チャット形式に対応する教師データを作る系のデータの場合はこちら"""
+    DATA_TYPE_INSTRUCT_CHAT = "instruct"
+
+    """プレーンテキストを教育して文書生成を行う場合はこちら"""
     DATA_TYPE_PLAINTEXT = "plaintext"
 
     @staticmethod
@@ -55,7 +59,7 @@ class TrainingPromptGenerator:
 
     @staticmethod
     def get_training_data(data_point, type):
-        if type == TrainingPromptGenerator.DATA_TYPE_INSTRUCT:
+        if type == TrainingPromptGenerator.DATA_TYPE_INSTRUCT_CHAT:
             return TrainingPromptGenerator.__get_instruct_training_data(data_point)
         elif type == TrainingPromptGenerator.DATA_TYPE_PLAINTEXT:
             return TrainingPromptGenerator.__get_plaintext_training_data(data_point)
@@ -64,7 +68,7 @@ class TrainingPromptGenerator:
 
     @staticmethod
     def get_prompt(prompt, type):
-        if type == TrainingPromptGenerator.DATA_TYPE_INSTRUCT:
+        if type == TrainingPromptGenerator.DATA_TYPE_INSTRUCT_CHAT:
             return TrainingPromptGenerator.__get_instruct_prompt(prompt)
         elif type == TrainingPromptGenerator.DATA_TYPE_PLAINTEXT:
             return TrainingPromptGenerator.__get_plaintext_prompt(prompt)
