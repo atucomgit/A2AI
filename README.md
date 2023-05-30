@@ -200,9 +200,12 @@ python finetune_japanese_ocr_reader.py
 - モデルを起動して文書生成を行わせる場合も、-r引数の後にオプションを示すことで対象のモデルを切り替えることができます。
 - LoRAでチューニングした場合は、自動的にAutomatic1111にsafetensors形式に変換したモデルを転送することが可能です。マージしたい場合は転送してください。
 - LoRAのファインチューニングについて、以下に参考文献を示します。
-- 参考文献は[コチラ](https://note.com/npaka/n/na5b8e6f749ce)です。（必見）
-- ほぼ参考文献通りのソースですが、MacBookで動くようにコード修正しています。
-- 利用しているデータセットの中身を確認した場合は[コチラ](https://raw.githubusercontent.com/kunishou/databricks-dolly-15k-ja/main/databricks-dolly-15k-ja.json)をクリック。
+  - 参考文献は[コチラ](https://note.com/npaka/n/na5b8e6f749ce)です。（必見）
+  - ほぼ参考文献通りのソースですが、MacBookで動くようにコード修正しています。
+  - 利用しているデータセットの中身を確認した場合は[コチラ](https://raw.githubusercontent.com/kunishou/databricks-dolly-15k-ja/main/databricks-dolly-15k-ja.json)をクリック。
+- ggml化もサポートしていますが、モデルによってはできないものもあります。（本家で対応できてないみたい）
+- LoRAモデルはggml化することができません。
+- ベースとなるモデルは./ggmlディレクトリ内にggml.binを作成します。それ以外は、チューニングされたモデルがあるディレクトリと同じ場所にggml.binを作成します。
 
 ### 起動方法
 ```
@@ -218,6 +221,7 @@ python finetune.py 引数
 | -f         | ファインチューニングオプション                              |
 | -l         | LoRAオプション                              |
 | -m         | マージオプション                              |
+| -g         | ggmlオプション                              |
 
 ### 起動例：対象のモデルをフルファインチューニングする場合
 ```
@@ -253,6 +257,21 @@ python finetune.py -r -l
 ### 起動例：ベースとLoRAでマージしたモデルに対して文書生成させる場合
 ```
 python finetune.py -r -m
+```
+
+### 起動例：ベースのモデルをダウンロードしてggml化する場合
+```
+python finetune.py -g
+```
+
+### 起動例：ベースのモデルをggmlで起動する場合
+```
+python finetune.py -r -g
+```
+
+### 起動例：ファインチューニングしたモデルをggmlで起動する場合
+```
+python finetune.py -r -g -f
 ```
 
 ### 注意事項
