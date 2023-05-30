@@ -27,7 +27,7 @@ def save_safetensors(base_model, peft_model):
     # Save tensors using safetensors
     save_file(tensors, lora_safetensors_name)
 
-def load_safetensors_and_save_as_model(base_model):
+def load_safetensors_and_save_as_model(base_model, save_dir):
     # Instantiate the model
     model = AutoModelForCausalLM.from_pretrained(base_model)
 
@@ -40,9 +40,6 @@ def load_safetensors_and_save_as_model(base_model):
     # Apply tensors to the model
     model.load_state_dict(tensors)
 
-    # 保存先の定義
-    save_dir = "./finetuned/lora-merged/" + base_model.split("/")[1]
-
     # save merged model
     model.save_pretrained(save_dir)
 
@@ -52,16 +49,17 @@ def load_safetensors_and_save_as_model(base_model):
 
 if __name__ == "__main__":
     # 引数のパーサを作成
-    parser = argparse.ArgumentParser(description='Train or run a fine-tuned GPT-2 model.')
+    parser = argparse.ArgumentParser(description='utils.')
     parser.add_argument('-ss', '--save_safetensors', action='store_true', help='save_safetensors')
     parser.add_argument('-ls', '--load_safetensors_and_save_as_model', action='store_true', help='load_safetensors_and_save_as_model')
     args = parser.parse_args()
 
     # 以下は例です。変更する場合は、base_modelを書き換えてください。
     base_model = "cyberagent/open-calm-medium"
-    peft_model = "finetuned/lora/" + base_model.split("/")[1]
+    peft_model = "finetuned-lora/" + base_model.split("/")[1]
+    merged_model = "finetuned-lora-merged/" + base_model.split("/")[1]
 
     if args.save_safetensors:
         save_safetensors(base_model, peft_model)
     elif args.load_safetensors_and_save_as_model:
-        load_safetensors_and_save_as_model(base_model)
+        load_safetensors_and_save_as_model(base_model, merged_model)

@@ -5,16 +5,22 @@ from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoConfig
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType, PeftModel
 import transformers
-import finetune_utils
+import utils_for_tuning
 
-# 基本パラメータ
-BASE_MODEL = "cyberagent/open-calm-medium"  # LoRAのベースとなるモデル
-DATA_SET = "kunishou/databricks-dolly-15k-ja"  # LoRAに学習させたいデータセット
+# トレーニングする対象のモデル
+BASE_MODEL = "cyberagent/open-calm-medium"  # huggingFaceで検索できるモデル名
+DATA_SET = "kunishou/databricks-dolly-15k-ja"  # 学習させたいデータセット
+
+# トレーニング用のハイパーパラメータ
+EPOCHS = 1           # トレーニング反復回数
+LEARNING_RATE=3e-4   # 学習レート
+MAX_STEPS = 10       # 学習最大ステップ数（上限を設定したい場合に設定する）
+LOGGING_STEPS = 1    # ログを保存する単位。小さい数字にすると、TensorBoardから細かくデータが見える
 
 # 以下は個別に定義する必要なし（あとでどこかに隠す）
 FINETUNED_MODEL = "finetuned/" + BASE_MODEL.split("/")[1]
-PEFT_MODEL = "finetuned/lora/" + BASE_MODEL.split("/")[1]
-MERGED_MODEL = "finetuned/lora-merged/" + BASE_MODEL.split("/")[1]
+PEFT_MODEL = "finetuned-lora/" + BASE_MODEL.split("/")[1]
+MERGED_MODEL = "finetuned-lora-merged/" + BASE_MODEL.split("/")[1]
 tmp_output_dir = "tmp_finetuned"  # ここに出力されるものは、トレーニング完了後に削除してしまってOKなので、自動で消しています
 
 def train(is_lora):
@@ -142,23 +148,19 @@ def train(is_lora):
     else:
         print("ログ削除はキャンセルされました")
 
-    epochs = 1
-    max_steps = 10
-    logging_steps = 1
-
     # トレーナーの準備
     trainer = transformers.Trainer(
         model=model,
         train_dataset=train_data,
         eval_dataset=val_data,
         args=transformers.TrainingArguments(
-            num_train_epochs=epochs,
-            learning_rate=3e-4,
-            logging_steps=logging_steps,
+            num_train_epochs=EPOCHS,
+            learning_rate=LEARNING_RATE,
+            logging_steps=LOGGING_STEPS,
             logging_dir="./log",
             evaluation_strategy="no",
             save_strategy="epoch",
-            max_steps=max_steps, 
+            max_steps=MAX_STEPS, 
             optim="adamw_torch",
             output_dir=tmp_output_dir,
             report_to="tensorboard",
@@ -180,19 +182,29 @@ def train(is_lora):
         trainer.model.save_pretrained(PEFT_MODEL)
         save_model_to_automatic1111 = input("Auomatic1111に生成したLoRAモデルを転送しますか？(y/n): ")
         if save_model_to_automatic1111.upper() == "Y":
-            finetune_utils.save_safetensors(BASE_MODEL, PEFT_MODEL)
+            utils_for_tuning.save_safetensors(BASE_MODEL, PEFT_MODEL)
     else:
         trainer.model.save_pretrained(FINETUNED_MODEL)
 
     # 不要なディレクトリの削除
     shutil.rmtree(tmp_output_dir)
 
-def run(prompt, is_lora, is_merged):
+def run(prompt, is_fine_tuned, is_lora, is_merged):
 
     # トークナイザーの準備
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
 
-    if is_lora:
+    if is_fine_tuned:
+        print("------------------------------------------")
+        print(f"TargetModel: {FINETUNED_MODEL}")
+
+        # モデルの準備
+        # 8bit量子化で作っているので、実行時はベースモデルも8bit量子化する
+        model = AutoModelForCausalLM.from_pretrained(
+            FINETUNED_MODEL,
+            llm_int8_enable_fp32_cpu_offload=True
+            )
+    elif is_lora:
         print("------------------------------------------")
         print(f"TargetModel: {PEFT_MODEL}")
         # モデルの準備
@@ -218,12 +230,11 @@ def run(prompt, is_lora, is_merged):
             )
     else:
         print("------------------------------------------")
-        print(f"TargetModel: {FINETUNED_MODEL}")
+        print(f"TargetModel: {BASE_MODEL}")
 
         # モデルの準備
-        # 8bit量子化で作っているので、実行時はベースモデルも8bit量子化する
         model = AutoModelForCausalLM.from_pretrained(
-            FINETUNED_MODEL,
+            BASE_MODEL,
             llm_int8_enable_fp32_cpu_offload=True
             )
     print("------------------------------------------")
@@ -291,9 +302,10 @@ if __name__ == "__main__":
     # 引数のパーサを作成
     parser = argparse.ArgumentParser(description='Train or run a fine-tuned GPT-2 model.')
     parser.add_argument('-t', '--train', action='store_true', help='fine tune the model.')
-    parser.add_argument('-l', '--lora', action='store_true', help='train the model by LoRA.')
     parser.add_argument('-r', '--run', action='store_true', help='Run the model.')
-    parser.add_argument('-m', '--merge', action='store_true', help='Automatic1111でマージしたモデルをlora-mergedに保存します.')
+    parser.add_argument('-f', '--finetuned', action='store_true', help='Finetuned option.')
+    parser.add_argument('-l', '--lora', action='store_true', help='LoRA option.')
+    parser.add_argument('-m', '--merge', action='store_true', help='merge option.')
     args = parser.parse_args()
 
     if args.train:
@@ -303,6 +315,6 @@ if __name__ == "__main__":
         if not prompt:
             prompt = "まどか☆マギカで一番かわいいのは？"
         print(prompt)
-        run(prompt, args.lora, args.merge)
+        run(prompt, args.finetuned, args.lora, args.merge)
     elif args.merge:
-        finetune_utils.load_safetensors_and_save_as_model(BASE_MODEL)
+        utils_for_tuning.load_safetensors_and_save_as_model(BASE_MODEL, MERGED_MODEL)

@@ -17,6 +17,8 @@ app/deeplearning/*/data_sets/*/*.json
 app/deeplearning/*/data_sets/*/*.jsonl
 app/deeplearning/*/storage/*.json
 app/deeplearning/llm/finetuned/*/*
+app/deeplearning/llm/finetuned-lora/*/*
+app/deeplearning/llm/finetuned-lora-merged/*/*
 app/deeplearning/ocr/image/*
 !app/deeplearning/ocr/image/.gitkeep
 !app/deeplearning/ocr/image/screen_shot.png
