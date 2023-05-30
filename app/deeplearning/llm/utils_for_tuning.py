@@ -6,8 +6,8 @@ from peft import PeftModel
 
 def save_safetensors(base_model, peft_model):
 
-    base_safetensors_name = "../../../../stable-diffusion-webui/models/Stable-diffusion/" + base_model.split("/")[1] + ".safetensors"
-    lora_safetensors_name = "../../../../stable-diffusion-webui/models/Stable-diffusion/" + base_model.split("/")[1] + "-lora.safetensors"
+    base_safetensors_name = "../../../../stable-diffusion-webui/models/Stable-diffusion/" + "-".join(base_model.split("/")) + ".safetensors"
+    lora_safetensors_name = "../../../../stable-diffusion-webui/models/Stable-diffusion/" + "-".join(base_model.split("/")) + "-lora.safetensors"
 
     # Instantiate the model
     model = AutoModelForCausalLM.from_pretrained(base_model)
@@ -32,7 +32,7 @@ def load_safetensors_and_save_as_model(base_model, save_dir):
     model = AutoModelForCausalLM.from_pretrained(base_model)
 
     # Load tensors from the safetensors file
-    merged_safetensors_name = "../../../../stable-diffusion-webui/models/Stable-diffusion/" + base_model.split("/")[1] + "-merged.safetensors"
+    merged_safetensors_name = "../../../../stable-diffusion-webui/models/Stable-diffusion/" + "-".join(base_model.split("/")) + "-merged.safetensors"
 
     with safe_open(merged_safetensors_name, framework="pt", device="mps") as f:
         tensors = {k: f.get_tensor(k) for k in f.keys()}

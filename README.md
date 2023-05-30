@@ -193,7 +193,128 @@ python finetune_japanese_ocr_reader.py
 
 ## llm
 
-### finetune_llm.py
+
+### finetune.py
+- モデルをファインチューニングするプログラムです。
+- モデル自体をフルファインチューニング、LoRAチューニングなどを-t 引数の後にオプションを示すことでトレーニングを切り替えることができます。
+- モデルを起動して文書生成を行わせる場合も、-r引数の後にオプションを示すことで対象のモデルを切り替えることができます。
+- LoRAでチューニングした場合は、自動的にAutomatic1111にsafetensors形式に変換したモデルを転送することが可能です。マージしたい場合は転送してください。
+- LoRAのファインチューニングについて、以下に参考文献を示します。
+- 参考文献は[コチラ](https://note.com/npaka/n/na5b8e6f749ce)です。（必見）
+- ほぼ参考文献通りのソースですが、MacBookで動くようにコード修正しています。
+- 利用しているデータセットの中身を確認した場合は[コチラ](https://raw.githubusercontent.com/kunishou/databricks-dolly-15k-ja/main/databricks-dolly-15k-ja.json)をクリック。
+
+### 起動方法
+```
+cd app/deeplearning/llm 
+python finetune.py 引数
+```
+
+### 代表的な引数
+| コマンド   | 説明                                                         |
+|------------|--------------------------------------------------------------|
+| -t         | トレーニングを実施                     |
+| -r         | モデルを起動                              |
+| -f         | ファインチューニングオプション                              |
+| -l         | LoRAオプション                              |
+| -m         | マージオプション                              |
+
+### 起動例：対象のモデルをフルファインチューニングする場合
+```
+python finetune.py -t
+```
+
+### 起動例：対象のモデルをLoRAファインチューニングする場合
+```
+python finetune.py -t -l
+```
+
+### 起動例：Automatic1111でマージしたモデルをfinetuned-lora-mergedにModelとして保存する場合
+```
+python finetune.py -m
+※ Automatic1111に、[ベースのモデル名]-merged.safetensorsというファイルを配置してから実行
+```
+
+### 起動例：ベースのモデルに対して文書生成させる場合
+```
+python finetune.py -r
+```
+
+### 起動例：フルファインチューニングしたモデルに対して文書生成させる場合
+```
+python finetune.py -r -f
+```
+
+### 起動例：LoRAファインチューニングしたモデルに対して文書生成させる場合
+```
+python finetune.py -r -l
+```
+
+### 起動例：ベースとLoRAでマージしたモデルに対して文書生成させる場合
+```
+python finetune.py -r -m
+```
+
+### 注意事項
+```
+LoRAする上で、AppleSillicon(M1/M2)を使わせるためには、device_mapでautoを指定するのは厳禁。
+（RuntimeError: Placeholder storage has not been allocated on MPS device!　エラーが起きる）
+
+# 8bit量子化してModelを取得する方法のMac版は以下の通り。
+    model = AutoModelForCausalLM.from_pretrained(
+        BASE_MODEL,
+        llm_int8_enable_fp32_cpu_offload=True,
+    )
+
+# ネットでよく見つかるcuda版は以下の通り。
+    model = AutoModelForCausalLM.from_pretrained(
+        BASE_MODEL,
+        load_in_8bit=True,  # Macだとこれ無理
+        device_map="auto"   # device_map指定するとMacだと落ちる
+    )
+```
+
+### utils_for_tuning.py
+- 二つのモデルを一つにマージする際に必要となる機能を提供します
+- LoRAしたモデルと元となったモデルを結合したりするのに使えます
+
+### 起動方法
+```
+cd app/deeplearning/llm 
+python utils_for_tuning.py -引数
+```
+
+### 代表的な引数
+| コマンド   | 説明                                                         |
+|------------|--------------------------------------------------------------|
+| -ss         | モデルを.safetensors形式に変換します。ファイルはsafetensorsディレクトリに格納されます                     |
+| -ls         | .savetensors形式のモデルを元のモデル（.bin, .h5）に戻します                              |
+
+### モデルをマージする方法
+- まずはAutomatic1111をインストールしてください。[Macでのインストール方法](https://gift-by-gifted.com/stablediffusion-3/)
+- マージしたいモデルの.safetensorsファイルを用意します。コレはfinetune_utils.py -ssで作成できます
+- 作成した.safetensorsファイルを、stable-diffusion-webui/models/Stable-diffusionディレクトリに格納
+- Automatic1111を利用してモデルをマージします。[マージ方法](https://kurokumasoft.com/2023/04/01/howto-make-merge-models/)
+- マージして作成された.safetensorsファイルをfinetune_utils.py -lsにてmodelに戻します。参照先ディレクトリは、ソースを直接修正してください
+- ggml化、量子化する場合はまず、ggmlツールをインストールしてください。git clone https://github.com/ggerganov/ggml.git
+- コマンドは、A2AI/app/deeplearning/llm/ggml/生成コマンド.txtに記載してあります。利用するモデルのベース（gpt-2, gpt-neoxなど）ごとにスクリプトが違うので注意です。
+
+### 学習の評価
+- tensorboardを利用します。
+- 学習は行うとlogディレクトリにログを出力しているので、それをtensorboardに食わせるとグラフで確認することができます。
+
+```
+# 起動コマンド
+tensorboard --logdir ./log
+http://localhost:6006/
+```
+
+### 注意事項
+- peft_llm.pyではうまくログが出力されます
+- finetune_llm.pyはログが出ないので、後ほど直します。
+
+### old_src_finetune_llm.py
+- 勉強初期段階で作っていたコード。（今は、finetune.pyが高機能になったので、過去ログとして保持）
 - TransformerベースのLLMをローカルでファインチューニングするサンプルです。
 - トレーニング後の使い方としては、与えたプロンプトに続く文章を生成させることができます。
   - （チャットではないので注意してください）
@@ -229,85 +350,5 @@ git clone https://github.com/tak6uch1/cuda-tensorflow.git
 「環境設定コマンド.txt」にも記載していますが、以下の環境変数設定も必要です。
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 
-ちなみに、peft_llm.pyにパイソンのコード版でのトレーニングを記載したので、後ほど差し替えて、transformersのgit-cloneは不要にする予定。
+ちなみに、finetune.pyにパイソンのコード版でのトレーニングを記載したので、後ほど差し替えて、transformersのgit-cloneは不要にする予定。
 ```
-
-### peft_llm.py
-- PEFTを利用してLoRAするサンプルです。
-- 冒頭にLoRAしたい対象のModel, DataSetを設定できますので、書き換えて利用してください。
-- 8bit量子化する手法も学べますので、ソースを確認してください。
-- トレーニング後、output_dirに設定しているファイルは削除してしまってOKです。起動に必要なのはPEFT_MODELです。
-- 参考文献は[コチラ](https://note.com/npaka/n/na5b8e6f749ce)です。（必見）
-- ほぼ参考文献通りのソースですが、MacBookで動くようにコード修正しています。
-- 利用しているデータセットの中身を確認した場合は[コチラ](https://raw.githubusercontent.com/kunishou/databricks-dolly-15k-ja/main/databricks-dolly-15k-ja.json)をクリック。
-
-### 起動方法
-```
-cd app/deeplearning/llm 
-python peft_llm.py -t
-python peft_llm.py -r
-```
-
-### 代表的な引数
-| コマンド   | 説明                                                         |
-|------------|--------------------------------------------------------------|
-| -t         | トレーニングしてLoRAモデルを生成                     |
-| -r         | トレーニングしたLoRAModelに対してChat                              |
-
-### 注意事項
-```
-LoRAする上で、AppleSillicon(M1/M2)を使わせるためには、device_mapでautoを指定するのは厳禁。
-（RuntimeError: Placeholder storage has not been allocated on MPS device!　エラーが起きる）
-
-# 8bit量子化してModelを取得する方法のMac版は以下の通り。
-    model = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL,
-        llm_int8_enable_fp32_cpu_offload=True,
-    )
-
-# ネットでよく見つかるcuda版は以下の通り。
-    model = AutoModelForCausalLM.from_pretrained(
-        BASE_MODEL,
-        load_in_8bit=True,  # Macだとこれ無理
-        device_map="auto"   # device_map指定するとMacだと落ちる
-    )
-```
-
-### finetune_utils.py
-- 二つのモデルを一つにマージする際に必要となる機能を提供します
-- LoRAしたモデルと元となったモデルを結合したりするのに使えます
-
-### 起動方法
-```
-cd app/deeplearning/llm 
-python finetune_utils.py -引数
-```
-
-### 代表的な引数
-| コマンド   | 説明                                                         |
-|------------|--------------------------------------------------------------|
-| -ss         | モデルを.safetensors形式に変換します。ファイルはsafetensorsディレクトリに格納されます                     |
-| -ls         | .savetensors形式のモデルを元のモデル（.bin, .h5）に戻します                              |
-
-### モデルをマージする方法
-- まずはAutomatic1111をインストールしてください。[Macでのインストール方法](https://gift-by-gifted.com/stablediffusion-3/)
-- マージしたいモデルの.safetensorsファイルを用意します。コレはfinetune_utils.py -ssで作成できます
-- 作成した.safetensorsファイルを、stable-diffusion-webui/models/Stable-diffusionディレクトリに格納
-- Automatic1111を利用してモデルをマージします。[マージ方法](https://kurokumasoft.com/2023/04/01/howto-make-merge-models/)
-- マージして作成された.safetensorsファイルをfinetune_utils.py -lsにてmodelに戻します。参照先ディレクトリは、ソースを直接修正してください
-- ggml化、量子化する場合はまず、ggmlツールをインストールしてください。git clone https://github.com/ggerganov/ggml.git
-- コマンドは、A2AI/app/deeplearning/llm/ggml/生成コマンド.txtに記載してあります。利用するモデルのベース（gpt-2, gpt-neoxなど）ごとにスクリプトが違うので注意です。
-
-### 学習の評価
-- tensorboardを利用します。
-- 学習は行うとlogディレクトリにログを出力しているので、それをtensorboardに食わせるとグラフで確認することができます。
-
-```
-# 起動コマンド
-tensorboard --logdir ./log
-http://localhost:6006/
-```
-
-### 注意事項
-- peft_llm.pyではうまくログが出力されます
-- finetune_llm.pyはログが出ないので、後ほど直します。

@@ -8,8 +8,8 @@ import transformers
 import utils_for_tuning
 
 # トレーニングする対象のモデル
-BASE_MODEL = "cyberagent/open-calm-medium"  # huggingFaceで検索できるモデル名
-DATA_SET = "kunishou/databricks-dolly-15k-ja"  # 学習させたいデータセット
+BASE_MODEL = "rinna/japanese-gpt2-medium"  # huggingFaceで検索できるモデル名（ローカルのファイルを指定してもOK）
+DATA_SET = "kunishou/databricks-dolly-15k-ja"  # 学習させたいデータセット（ローカルのファイルを指定してもOK）
 
 # トレーニング用のハイパーパラメータ
 EPOCHS = 1           # トレーニング反復回数
@@ -18,9 +18,9 @@ MAX_STEPS = 10       # 学習最大ステップ数（上限を設定したい場
 LOGGING_STEPS = 1    # ログを保存する単位。小さい数字にすると、TensorBoardから細かくデータが見える
 
 # 以下は個別に定義する必要なし（あとでどこかに隠す）
-FINETUNED_MODEL = "finetuned/" + BASE_MODEL.split("/")[1]
-PEFT_MODEL = "finetuned-lora/" + BASE_MODEL.split("/")[1]
-MERGED_MODEL = "finetuned-lora-merged/" + BASE_MODEL.split("/")[1]
+FINETUNED_MODEL = "finetuned/" + "-".join(BASE_MODEL.split("/"))
+PEFT_MODEL = "finetuned-lora/" + "-".join(BASE_MODEL.split("/"))
+MERGED_MODEL = "finetuned-lora-merged/" + "-".join(BASE_MODEL.split("/"))
 tmp_output_dir = "tmp_finetuned"  # ここに出力されるものは、トレーニング完了後に削除してしまってOKなので、自動で消しています
 
 def train(is_lora):
