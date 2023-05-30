@@ -8,6 +8,8 @@ import transformers
 import utils_for_tuning
 from training_prompt_generator import TrainingPromptGenerator
 
+"""---- ユーザーによるデータカスタマイズブロック：以下、自由に変更可能です。 ----"""
+
 # トレーニングする対象のモデル
 BASE_MODEL = "rinna/japanese-gpt2-medium"      # huggingFaceで検索できるモデル名（ローカルのファイルを指定してもOK）
 DATA_SET = "kunishou/databricks-dolly-15k-ja"  # 学習させたいデータセット（ローカルのファイルを指定してもOK）
@@ -18,6 +20,9 @@ EPOCHS = 1            # トレーニング反復回数
 LEARNING_RATE=3e-4    # 学習レート
 MAX_STEPS = 200       # 学習最大ステップ数（上限を設定したい場合に設定する）
 LOGGING_STEPS = 1     # ログを保存する単位。小さい数字にすると、TensorBoardから細かくデータが見える
+
+"""---- ユーザーによるデータカスタマイズブロック：ここまで ----"""
+
 
 # 以下は個別に定義する必要なし（あとでどこかに隠す）
 FINETUNED_MODEL = "finetuned/" + "-".join(BASE_MODEL.split("/"))
