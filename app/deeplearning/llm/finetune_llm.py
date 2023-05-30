@@ -108,10 +108,10 @@ def train(path_to_dataset):
 
     # データセットの確認
     print(data)
-    print(data["train"][6])
+    print(data["train"][0])
 
     # プロンプトテンプレートの確認
-    print(generate_prompt(data["train"][6]))
+    print(generate_prompt(data["train"][0]))
 
     # 学習データと検証データの準備
     VAL_SET_SIZE = 100
