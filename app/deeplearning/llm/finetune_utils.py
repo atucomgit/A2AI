@@ -4,54 +4,51 @@ from safetensors import safe_open
 from safetensors.torch import save_file
 from peft import PeftModel
 
+def save_safetensors(base_model, peft_model):
 
-BASE_MODEL = "cyberagent/open-calm-medium"
-SAFETENSORS_NAME = "safetensors/open-calm-medium.safetensors"
-
-PEFT_MODEL = "finetuned/lora-calm-medium"
-PEFT_SAFETENSORS_NAME = "safetensors/open-calm-medium-lora.safetensors"
-
-LOAD_SAFETENSORS_NAME = "safetensors/open-calm-medium-merged.safetensors"
-SAVE_MERGED_MODEL = "./finetuned/base_and_lora_merged/open-calm-medium/"
-
-def save_safetensors():
+    base_safetensors_name = "../../../../stable-diffusion-webui/models/Stable-diffusion/" + base_model.split("/")[1] + ".safetensors"
+    lora_safetensors_name = "../../../../stable-diffusion-webui/models/Stable-diffusion/" + base_model.split("/")[1] + "-lora.safetensors"
 
     # Instantiate the model
-    model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
+    model = AutoModelForCausalLM.from_pretrained(base_model)
 
     # Extract tensors from the model
     tensors = {name: param.clone().detach() for name, param in model.state_dict().items()}
 
     # Save tensors using safetensors
-    save_file(tensors, SAFETENSORS_NAME)
+    save_file(tensors, base_safetensors_name)
 
-    if PEFT_MODEL:
-        # Instantiate the peft model
-        model = PeftModel.from_pretrained(model, PEFT_MODEL)
+    # Instantiate the peft model
+    model = PeftModel.from_pretrained(model, peft_model)
 
-        # Extract tensors from the model
-        tensors = {name: param.clone().detach() for name, param in model.state_dict().items()}
+    # Extract tensors from the peft model
+    tensors = {name: param.clone().detach() for name, param in model.state_dict().items()}
 
-        # Save tensors using safetensors
-        save_file(tensors, PEFT_SAFETENSORS_NAME)
+    # Save tensors using safetensors
+    save_file(tensors, lora_safetensors_name)
 
-def load_safetensors_and_save_as_model():
+def load_safetensors_and_save_as_model(base_model):
     # Instantiate the model
-    model = AutoModelForCausalLM.from_pretrained(BASE_MODEL)
+    model = AutoModelForCausalLM.from_pretrained(base_model)
 
     # Load tensors from the safetensors file
-    with safe_open(LOAD_SAFETENSORS_NAME, framework="pt", device="mps") as f:
+    merged_safetensors_name = "../../../../stable-diffusion-webui/models/Stable-diffusion/" + base_model.split("/")[1] + "-merged.safetensors"
+
+    with safe_open(merged_safetensors_name, framework="pt", device="mps") as f:
         tensors = {k: f.get_tensor(k) for k in f.keys()}
 
     # Apply tensors to the model
     model.load_state_dict(tensors)
 
+    # 保存先の定義
+    save_dir = "./finetuned/lora-merged/" + base_model.split("/")[1]
+
     # save merged model
-    model.save_pretrained(SAVE_MERGED_MODEL)
+    model.save_pretrained(save_dir)
 
     # トークナイザーの保存
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-    tokenizer.save_pretrained(SAVE_MERGED_MODEL)
+    tokenizer = AutoTokenizer.from_pretrained(base_model)
+    tokenizer.save_pretrained(save_dir)
 
 if __name__ == "__main__":
     # 引数のパーサを作成
@@ -60,7 +57,11 @@ if __name__ == "__main__":
     parser.add_argument('-ls', '--load_safetensors_and_save_as_model', action='store_true', help='load_safetensors_and_save_as_model')
     args = parser.parse_args()
 
+    # 以下は例です。変更する場合は、base_modelを書き換えてください。
+    base_model = "cyberagent/open-calm-medium"
+    peft_model = "finetuned/lora/" + base_model.split("/")[1]
+
     if args.save_safetensors:
-        save_safetensors()
+        save_safetensors(base_model, peft_model)
     elif args.load_safetensors_and_save_as_model:
-        load_safetensors_and_save_as_model()
+        load_safetensors_and_save_as_model(base_model)
