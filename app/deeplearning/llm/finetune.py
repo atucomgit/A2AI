@@ -1,3 +1,4 @@
+import os
 import argparse
 import shutil
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -11,14 +12,14 @@ from training_prompt_generator import TrainingPromptGenerator
 """---- ユーザーによるデータカスタマイズブロック：以下、自由に変更可能です。 ----"""
 
 # トレーニングする対象のモデル
-BASE_MODEL = "rinna/japanese-gpt2-medium"      # huggingFaceで検索できるモデル名（ローカルのファイルを指定してもOK）
+BASE_MODEL = "cyberagent/open-calm-medium"      # huggingFaceで検索できるモデル名（ローカルのファイルを指定してもOK）
 DATA_SET = "kunishou/databricks-dolly-15k-ja"  # 学習させたいデータセット（ローカルのファイルを指定してもOK）
 DATA_SET_TYPE = TrainingPromptGenerator.DATA_TYPE_INSTRUCT_CHAT  # DataSetの形式に合致するデータタイプ。詳しくはTrainingPromptGenerator参照。
 
 # トレーニング用のハイパーパラメータ
 EPOCHS = 1            # トレーニング反復回数
 LEARNING_RATE=3e-4    # 学習レート
-MAX_STEPS = 200       # 学習最大ステップ数（上限を設定したい場合に設定する）
+MAX_STEPS = 10        # 学習最大ステップ数（上限を設定したい場合に設定する）
 LOGGING_STEPS = 1     # ログを保存する単位。小さい数字にすると、TensorBoardから細かくデータが見える
 
 """---- ユーザーによるデータカスタマイズブロック：ここまで ----"""
@@ -176,11 +177,14 @@ def train(is_lora):
     # トレーニングしたモデルの保存
     if is_lora:
         trainer.model.save_pretrained(PEFT_MODEL)
+        tokenizer.save_pretrained(PEFT_MODEL)
         save_model_to_automatic1111 = input("Auomatic1111に生成したLoRAモデルを転送しますか？(y/n): ")
         if save_model_to_automatic1111.upper() == "Y":
             utils_for_tuning.save_safetensors(BASE_MODEL, PEFT_MODEL)
     else:
         trainer.model.save_pretrained(FINETUNED_MODEL)
+        tokenizer.save_pretrained(FINETUNED_MODEL)
+        convert_model_to_ggml(FINETUNED_MODEL)
 
     # 不要なディレクトリの削除
     shutil.rmtree(tmp_output_dir)
@@ -282,6 +286,46 @@ def run(prompt, is_fine_tuned, is_lora, is_merged):
 
     generate(prompt)
 
+def convert_model_to_ggml(ggml_target_model):
+
+    model = AutoModelForCausalLM.from_pretrained(ggml_target_model)
+    tokenizer = AutoTokenizer.from_pretrained(ggml_target_model)
+    if model.config.model_type == "gpt_neox":
+        script_path = "../../../../ggml/examples/gpt-neox/convert-h5-to-ggml.py"
+    elif model.config.model_type == "gpt2":
+        script_path = "../../../../ggml/examples/gpt-2/convert-h5-to-ggml.py"
+    else:
+        raise ValueError(f"このmodel_typeに従ったscript_pathをプログラム追記してください: {model.config.model_type}")
+
+    target_model_path = ggml_target_model
+    if not ggml_target_model.startswith("finetuned"):
+        target_model_path = "./ggml"
+        model.save_pretrained(target_model_path)
+        tokenizer.save_pretrained(target_model_path)
+    
+    # コマンドを生成
+    command = f"python {script_path} {target_model_path} 1"
+
+    # コマンドを実行
+    os.system(command)
+
+def run_ggml(prompt, ggml_target_model):
+
+    target_model_path = ggml_target_model
+    if not ggml_target_model.startswith("finetuned"):
+        target_model_path = "./ggml"  # huggingfaceのモデルをggml化する場合、モデルをリポジトリに保存しなければならず、HDDを圧迫するので、一旦、どんなモデルでも一箇所に置く仕様とする
+
+    print("------------------------------------------")
+    print(f"ggml base model: {ggml_target_model}")
+    print(f"ggml bin: {target_model_path}/ggml-model-f16.bin")
+    print("------------------------------------------")
+
+    # コマンドを生成
+    command = f"../../../../ggml/build/bin/gpt-neox -m {target_model_path}/ggml-model-f16.bin -p {prompt}"
+
+    # コマンドを実行
+    os.system(command)
+
 if __name__ == "__main__":
     # 引数のパーサを作成
     parser = argparse.ArgumentParser(description='Train or run a fine-tuned GPT-2 model.')
@@ -290,6 +334,7 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--finetuned', action='store_true', help='Finetuned option.')
     parser.add_argument('-l', '--lora', action='store_true', help='LoRA option.')
     parser.add_argument('-m', '--merge', action='store_true', help='merge option.')
+    parser.add_argument('-g', '--ggml', action='store_true', help='ggml option.')
     args = parser.parse_args()
 
     if args.train:
@@ -299,6 +344,26 @@ if __name__ == "__main__":
         if not prompt:
             prompt = "まどか☆マギカで一番かわいいのは？"
         print(prompt)
-        run(prompt, args.finetuned, args.lora, args.merge)
+        if args.ggml:
+            if args.finetuned:
+                run_ggml(prompt, FINETUNED_MODEL)
+            elif args.lora:
+                print("LoRAモデルのggmlは作成できないため、起動できません。")
+            elif args.merge:
+                run_ggml(prompt, MERGED_MODEL)
+            else:
+                run_ggml(prompt, BASE_MODEL)
+        else:
+            run(prompt, args.finetuned, args.lora, args.merge)
     elif args.merge:
         utils_for_tuning.load_safetensors_and_save_as_model(BASE_MODEL, MERGED_MODEL)
+        convert_model_to_ggml(MERGED_MODEL)
+    elif args.ggml:
+        if args.finetuned:
+            convert_model_to_ggml(FINETUNED_MODEL)
+        elif args.lora:
+            print("LoRAモデルはggml化できません。")
+        elif args.merge:
+            convert_model_to_ggml(MERGED_MODEL)
+        else:
+            convert_model_to_ggml(BASE_MODEL)
