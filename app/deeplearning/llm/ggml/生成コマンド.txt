@@ -1,3 +1,6 @@
+・TipsはGoogle Colabにまとめてあります。
+https://colab.research.google.com/drive/1OGiO7Z-tUThc8XkCWC9Ukxp_eXdE5oIB#scrollTo=OeoL0YFmKWH-
+
 ・ggml化
 python ../../../../../ggml/examples/gpt-neox/convert-h5-to-ggml.py ../finetuned/rinna-instruct 1
 python ../../../../../ggml/examples/gpt-neox/convert-h5-to-ggml.py ../finetuned/base_and_lora_merged/open-calm-medium 1

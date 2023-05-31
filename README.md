@@ -317,6 +317,7 @@ python utils_for_tuning.py -引数
 - マージして作成された.safetensorsファイルをfinetune_utils.py -lsにてmodelに戻します。参照先ディレクトリは、ソースを直接修正してください
 - ggml化、量子化する場合はまず、ggmlツールをインストールしてください。git clone https://github.com/ggerganov/ggml.git
 - コマンドは、A2AI/app/deeplearning/llm/ggml/生成コマンド.txtに記載してあります。利用するモデルのベース（gpt-2, gpt-neoxなど）ごとにスクリプトが違うので注意です。
+- その他gglmのtipsは[Google Colab](https://colab.research.google.com/drive/1OGiO7Z-tUThc8XkCWC9Ukxp_eXdE5oIB#scrollTo=OeoL0YFmKWH-)に記載してあります。
 
 ### 学習の評価
 - tensorboardを利用します。
