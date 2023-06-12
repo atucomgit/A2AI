@@ -13,7 +13,7 @@ sys.path.append("../../utils")
 import speech_input
 
 
-def create_new_index(target_dir, save_dir):
+def create_new_index(target_dir, model):
     """
     adaを利用する場合以下のコストがかかる
         $0.0004  /  1,000 トークン
@@ -23,19 +23,24 @@ def create_new_index(target_dir, save_dir):
         ※試したところ、20万トークンなので、8セントほど。
     """
     # ログレベルの設定
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO, force=True)
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG, force=True)
 
     # インデックスの作成
     print("インデックス作成中")
     documents = SimpleDirectoryReader(target_dir).load_data()
     # print(documents)
-    index = GPTVectorStoreIndex.from_documents(documents, service_context=create_service_context())
+    index = GPTVectorStoreIndex.from_documents(documents, service_context=create_service_context(model))
 
     # インデックスの保存（デフォルトで、ローカルの./storageに入る）
     print("indexを保存")
-    index.storage_context.persist(save_dir)
+    index.storage_context.persist(f"./storage/{model}")
 
 def recursive_create_new_index(directory_path, save_dir):
+    """
+    任意のディレクトリ配下のディレクトリを再起的に全て確認す、全てのdatasetをembedするメソッド
+    
+    ソースコードを全てエンベディングするために利用することを想定
+    """
 
     # ログレベルの設定
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, force=True)
@@ -53,19 +58,19 @@ def recursive_create_new_index(directory_path, save_dir):
                 print(f"Embed対象: {file_path}")
 
     # ドキュメントをインデックスに追加
-    index = GPTVectorStoreIndex.from_documents(documents, service_context=create_service_context())
+    index = GPTVectorStoreIndex.from_documents(documents, service_context=create_service_context(model))
 
     # インデックスの保存（デフォルトで、ローカルの./storageに入る）
     print("indexを保存")
-    index.storage_context.persist(save_dir)
+    index.storage_context.persist(f"./storage/{model}")
 
-def create_service_context():
+def create_service_context(model):
     # max_tokensの設定の苦労日記
     ## 下記、max_tokensは効かない。無理やり効かせるためには、下記OpenAIクラスのmax_tokensを直接修正する必要あり。
     ## なお、以下の引数がどのような分岐で扱われているかは、LLMPredictor._get_llm_metadata()のソースを確認するとわかりやすい。
     chat_open_ai = OpenAI(
             temperature=0.7,
-            model_name="ada",
+            model_name=model,
             max_tokens=3000
         )
 
@@ -83,25 +88,28 @@ def create_service_context():
         prompt_helper=prompt_helper
     )
 
-def chat(save_dir, prompt):
+def chat(model, engine):
 
     # ログレベルの設定
     logging.basicConfig(stream=sys.stdout, level=logging.WARNING, force=True)
+
+    save_dir = "./storage/" + model
 
     # インデックスの読み込み
     storage_context = StorageContext.from_defaults(persist_dir=save_dir)
     index = load_index_from_storage(storage_context)
 
     # クエリエンジンの作成
-    query_engine = index.as_query_engine()
-
-    # 質問応答
-    if not prompt:
-        # prompt = input("質問を入力してください：")
-        # print(prompt)
-        prompt = speech_input.get_speech_input("チャット受付中：")
-    print("---- GPTさん考え中... ---")
-    print(f'回答：{query_engine.query(prompt)}')
+    if engine == "chat":
+        while True:
+            # prompt = speech_input.get_speech_input("チャット受付中：")
+            prompt = input("質問を入力してください：")
+            query_engine = index.as_chat_engine()
+            print(f'回答：{query_engine.chat(prompt)}')
+    elif engine == "query":
+        prompt = input("質問を入力してください：")
+        query_engine = index.as_query_engine()
+        print(f'回答：{query_engine.query(prompt)}')
 
 if __name__ == "__main__":
     """引数を何も指定しない場合、エンベッドしたデータに対するChatを起動できます"""
@@ -110,13 +118,24 @@ if __name__ == "__main__":
     parser.add_argument("-rc", "--recursive_create_index", action="store_true", help="インデックスの作成")
     args = parser.parse_args()
 
+    ### Fist-generation models
+    # model = "ada"
+    # model = "babbage"
+    # model = "curie"
+    # model = "davinci"
+
+    ### Second-generation models
+    model = "text-embedding-ada-002"
+
+    engine = "chat"  # chat / query
+
     if args.create_index:
         # 特定のディレクトリ配下のソースファイルを覚え込ませるサンプル
-        create_new_index("../../utils", "./storage")
-        chat("./storage", None)
+        create_new_index("./data_sets", model)
+        chat(model, engine)
     elif args.recursive_create_index:
         # 特定のディレクトリ配下のソースファイル（さらにその下以降のディレクトリも再起的に全て）を覚え込ませるサンプル
-        recursive_create_new_index("../../utils", "./storage")
-        chat("./storage", None)
+        recursive_create_new_index("../../utils", model)
+        chat(model, engine)
     else:
-        chat("./storage", None)
+        chat(model, engine)
