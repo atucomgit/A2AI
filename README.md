@@ -136,9 +136,10 @@ https://zenn.dev/shu223/articles/whisper-coreml?fbclid=IwAR20EpbYK1bbP12hiNHiVMU
 
 # app/deeplearning
 ## embedding
+### embed_chat.py
 エンベッド技術を用いて、GPTモデルに対して手持ちのデータを学習させた後にチャットするサンプルです。
 
-### 起動方法
+### 起動方法（embed_chat.py）
 ```
 cd app/deeplearning/embedding
 python embed_chat.py
@@ -158,6 +159,21 @@ python embed_chat.py
 - 利用されるGPTモデルはadaです（なので、精度高くないです）
 - サンプルでは、-cをすると、app/utils配下のソースコードをエンベッドするようにパス設定しています。エンベッド後に、どんな機能を備えているの？とか、チャットしてみてください。
 - max_tokensの設定方法が不透明でバグっぽい動きをします。最終的に、langchain.OpenAIクラスを直接修正しないと、設定が効きませんでした。
+
+### 起動方法（primitive_embedding.py）
+OpenAIのエンべディング関数を直接利用するサンプル
+
+### 起動方法（primitive_embedding.py）
+```
+cd app/deeplearning/embedding
+python primitive_embedding.py
+```
+
+### 代表的な引数
+| コマンド   | 説明                                                         |
+|------------|--------------------------------------------------------------|
+| 引数なし   | エンベッドしたデータから最も近い文字列をサーチする処理のサンプルを動かす                   |
+| -c         | data_sets内のデータをエンベッド                     |
 
 ## ocr
 - ローカルPCでOCRリーダーを実装するサンプル
