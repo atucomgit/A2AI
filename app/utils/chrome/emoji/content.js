@@ -22,7 +22,7 @@ function sendToChatGPTCore(text) {
   const data = {
     model: 'gpt-3.5-turbo',
     messages: [
-      { role: "system", content: "あなたは文章を絵文字に変換するエキスパートです。絵文字に変換した結果だけを返信してください。" },
+      { role: "system", content: "あなたは文章を絵文字に変換するエキスパートです。絵文字に変換した結果の絵文字だけを完結に返信してください。" },
       { role: "user", content: '以下の内容を絵文字に変換してください：' + text }
     ],
     temperature: 0.5
