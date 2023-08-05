@@ -1,5 +1,7 @@
-document.getElementById('convert').addEventListener('click', () => {
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-      chrome.tabs.sendMessage(tabs[0].id, {action: "convert"});
-    });
-  });
+// popup.js
+// background.jsからのメッセージを受け取って結果を表示する
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.result) {
+    document.getElementById('emoji_output').innerText = request.result;
+  }
+});

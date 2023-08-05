@@ -1,19 +1,17 @@
 {
-    "manifest_version": 3,
-  
-    "name": "ChatGPT Emoji Converter",
-    "version": "1.0",
-    "description": "Convert the first 1000 characters of the page to emoji using ChatGPT",
-  
-    "permissions": [
-      "activeTab"
-    ],
-  
-    "action": {
-      "default_popup": "popup.html"
-    },
-  
-    "background": {
-      "service_worker": "background.js"
+  "manifest_version": 3,
+  "name": "ChatGPT Emoji Converter",
+  "version": "1.0",
+  "permissions": [
+    "activeTab"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
     }
-  }
+  ]
+}
