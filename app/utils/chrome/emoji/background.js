@@ -4,7 +4,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer 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'
+          'Authorization': 'Bearer API KEY'
         },
         body: JSON.stringify({
           prompt: request.text.slice(0,1000),
