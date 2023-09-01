@@ -1,5 +1,3 @@
-// content.js
-
 // ページロード時に「このサイトを絵文字化」ボタンを表示
 const btn = document.createElement("button");
 btn.id = "emoji_btn";
@@ -17,10 +15,23 @@ btn.style.borderRadius = "5px"; // ボタンの角を丸くする
 btn.style.cursor = "pointer"; // ボタンにカーソルを合わせた時にポインターを表示
 document.body.appendChild(btn);
 
+// ボタンを押すと「絵文字化中...」と表示される関数
+function disableButton() {
+  btn.innerHTML = "絵文字化中...";
+  btn.disabled = true;
+}
+
+// ボタンを有効化する関数
+function enableButton() {
+  btn.innerHTML = "このサイトを絵文字化";
+  btn.disabled = false;
+}
+
 // 「このサイトを絵文字化」ボタンを押すと表示しているWebページの先頭1000文字をChatGPTに送信
 function sendToChatGPT() {
   console.log('content.js:sendToChatGPT');
   let text = document.body.innerText.substring(0, 1000);
+  disableButton();
   sendToChatGPTCore(text);
 }
 
@@ -33,8 +44,8 @@ function sendToChatGPTCore(text) {
   const data = {
     model: 'gpt-3.5-turbo',
     messages: [
-      { role: "system", content: "あなたは文章を絵文字に変換するエキスパートです。絵文字に変換した結果の絵文字だけを簡潔に返信してください。" },
-      { role: "user", content: '以下の内容を絵文字のみで表現してください：' + text }
+      { role: "system", content: "あなたは文章を絵文字に変換するエキスパートです。絵文字に変換した結果の絵文字だけを20文字以内で返信してください。" },
+      { role: "user", content: '以下の内容を最大20文字の絵文字のみで表現してください：' + text }
     ],
     temperature: 0.5
   }
@@ -62,9 +73,12 @@ function sendToChatGPTCore(text) {
     } else {
       console.error('ChatGPT response is invalid.');
     }
+
+    enableButton(); // 通信完了後にボタンを有効化する
   })
   .catch((error) => {
     console.log('Error:', error);
+    enableButton(); // エラー発生時もボタンを有効化する
   });
 }
 
