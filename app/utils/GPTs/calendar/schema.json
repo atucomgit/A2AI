@@ -1,0 +1,26 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Get Google Calendar",
+    "description": "Retrieves my calendar.",
+    "version": "v1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://script.google.com"
+    }
+  ],
+  "paths": {
+"/macros/s/Deployment IDで置換/exec": {
+      "get": {
+        "description": "Calendar",
+        "operationId": "GetGoogleCalendarData",
+        "parameters": [],
+        "deprecated": false
+      }
+    }
+  },
+  "components": {
+    "schemas": {}
+  }
+}
